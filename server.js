@@ -17,13 +17,12 @@ const FILES=[['passport',1],['admission',1],['lgaProof',0],['receipt',1]];
 app.post('/api/apply',up.fields(FILES.map(([name])=>({name,maxCount:1}))),async(q,s)=>{
  try{
   const f=q.files||{},b=q.body;
-  for(const k of['fullName','gender','dob','phone','email','address','lga','position','institution','qualification','department','level','paymentRef'])
+  for(const k of['fullName','gender','dob','phone','email','address','lga','position','institution','qualification','department','level'])
    if(!b[k]||!b[k].trim())return s.status(400).json({error:'Please fill in all required fields.'});
-  if(b.position==='President'&&!/^(HND|B\.Sc|Bachelor|Equivalent)/.test(b.qualification))return s.status(400).json({error:'The President must hold or be pursuing an HND, B.Sc./B.A. or equivalent.'});
-  if(['Treasurer','Auditor'].includes(b.position)&&!b.accounting)return s.status(400).json({error:'Please confirm your accounting eligibility.'});
+  if(b.position==='President'&&!['HND','B.Sc.','B.A.','LL.B.','B.Tech.','Equivalent qualification'].includes(b.qualification))return s.status(400).json({error:'The President must hold or be pursuing an HND, B.Sc./B.A. or equivalent.'});
   for(const[k,req]of FILES)if(req&&!f[k])return s.status(400).json({error:'Please upload: '+k.replace(/([A-Z])/g,' $1')+'.'});
   for(const k in f)if(!/^(image\/(jpe?g|png|webp)|application\/pdf)$/.test(f[k][0].mimetype))return s.status(400).json({error:'Only JPG, PNG or PDF files are allowed.'});
-  const data={};['fullName','gender','dob','phone','email','address','lga','ward','position','institution','faculty','department','level','qualification','accounting','matricNo','paymentRef'].forEach(k=>data[k]=(b[k]||'').trim());
+  const data={};['fullName','gender','dob','phone','email','address','lga','ward','position','institution','faculty','department','level','qualification','matricNo'].forEach(k=>data[k]=(b[k]||'').trim());
   const ref='FISU-'+crypto.randomBytes(3).toString('hex').toUpperCase();
   const c=await pool.connect();
   try{await c.query('BEGIN');
