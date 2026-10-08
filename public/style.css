@@ -23,14 +23,14 @@ footer{text-align:center;color:#8a7662;font-size:.85rem;padding-bottom:30px}
 /* admin */
 table{width:100%;border-collapse:collapse;font-size:.92rem}th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line)}
 tr.row{cursor:pointer}tr.row:hover{background:#fff4e5}
-.tag{padding:2px 10px;border-radius:99px;font-size:.78rem;font-weight:700;background:#eee}.tag.Approved{background:#d7f0dc;color:#1c6b30}.tag.Rejected{background:#fadad7;color:#a02018}.tag.Pending{background:#fde9c8;color:#8a5200}
+.tag{padding:2px 10px;border-radius:99px;font-size:.78rem;font-weight:700;background:#eee}.tag.Qualified{background:#d7f0dc;color:#1c6b30}.tag.Rejected{background:#fadad7;color:#a02018}.tag.Pending{background:#fde9c8;color:#8a5200}
 .modal{position:fixed;inset:0;background:rgba(40,20,8,.7);overflow:auto;padding:16px;display:none;z-index:9}.modal.on{display:block}
 .tools{max-width:460px;margin:0 auto 12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .profile{width:460px;max-width:100%;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:4px solid var(--brown)}
 .profile .top{background:var(--deep);color:#fff;display:flex;align-items:center;gap:12px;padding:12px 14px}.profile .top img{width:54px;background:#fff;border-radius:50%}
 .profile .top b{font:700 1rem 'Fraunces',serif;display:block}.profile .top span{font-size:.75rem;color:#f3d9bd}
 .profile .id{display:flex;gap:14px;padding:16px 14px 8px}.profile .ph{width:110px;height:136px;object-fit:cover;border:3px solid var(--orange);border-radius:6px;background:#eee}
-.profile h3{font-size:1.25rem}.profile .pos{display:inline-block;background:var(--orange);color:var(--ink);font-weight:700;padding:2px 10px;border-radius:6px;margin-top:6px;font-size:.85rem}
+.profile h3{font-size:1.25rem}.profile .pos{margin-top:8px;font-size:.85rem;color:var(--brown)}.profile .pos b{display:block;font-size:1rem;color:var(--ink);background:#fde9c8;border-left:4px solid var(--orange);padding:3px 8px;margin-top:3px}.qbadge{background:#1c6b30;color:#fff;text-align:center;font-weight:700;padding:6px;font-size:1rem}.qbadge[hidden]{display:none}
 .profile dl{margin:0;padding:6px 14px 14px;display:grid;grid-template-columns:120px 1fr;gap:5px 10px;font-size:.88rem}.profile dt{color:var(--brown);font-weight:700}.profile dd{margin:0;word-break:break-word}
 .profile .ft{background:var(--brown);color:#fff;text-align:center;padding:6px;font-size:.78rem}
 .docs a{margin-right:10px;color:var(--brown);font-weight:600}

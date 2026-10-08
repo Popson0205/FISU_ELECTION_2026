@@ -10,8 +10,10 @@ app.use(express.json());app.use(express.static('public'));app.get('/admin',(q,s)
 pool.query(`CREATE TABLE IF NOT EXISTS applicants(id SERIAL PRIMARY KEY,ref TEXT UNIQUE,data JSONB NOT NULL,status TEXT DEFAULT 'Pending',created_at TIMESTAMPTZ DEFAULT now());
 CREATE TABLE IF NOT EXISTS files(applicant_id INT REFERENCES applicants(id) ON DELETE CASCADE,kind TEXT,mime TEXT,name TEXT,data BYTEA,PRIMARY KEY(applicant_id,kind));`).catch(e=>console.error('DB init failed',e));
 
-app.get('/api/config',(q,s)=>s.json({price:E.FORM_PRICE||'NGN 5,000',bank:E.BANK_NAME||'',accName:E.ACCOUNT_NAME||'',accNo:E.ACCOUNT_NUMBER||'',
- positions:(E.POSITIONS||'President,Vice President,General Secretary,Assistant General Secretary,Financial Secretary,Treasurer,Public Relation Officer,Director of Sport,Director of Welfare,Director of Social,Librarian,Chief Whip,Auditor').split(',').map(x=>x.trim())}));
+const POS=(E.POSITIONS||'President,Vice President,General Secretary,Assistant General Secretary,Financial Secretary,Treasurer,Public Relation Officer,Director of Sport,Director of Welfare,Director of Social,Librarian,Chief Whip,Auditor').split(',').map(x=>x.trim());
+const PRICES={'President':7000,'Vice President':6000,'General Secretary':5000};
+const priceOf=p=>PRICES[p]||4000;
+app.get('/api/config',(q,s)=>s.json({bank:E.BANK_NAME||'',accName:E.ACCOUNT_NAME||'',accNo:E.ACCOUNT_NUMBER||'',positions:POS,fees:Object.fromEntries(POS.map(p=>[p,priceOf(p)]))}));
 
 const FILES=[['passport',1],['admission',1],['lgaProof',0],['receipt',1]];
 app.post('/api/apply',up.fields(FILES.map(([name])=>({name,maxCount:1}))),async(q,s)=>{
@@ -23,6 +25,7 @@ app.post('/api/apply',up.fields(FILES.map(([name])=>({name,maxCount:1}))),async(
   for(const[k,req]of FILES)if(req&&!f[k])return s.status(400).json({error:'Please upload: '+k.replace(/([A-Z])/g,' $1')+'.'});
   for(const k in f)if(!/^(image\/(jpe?g|png|webp)|application\/pdf)$/.test(f[k][0].mimetype))return s.status(400).json({error:'Only JPG, PNG or PDF files are allowed.'});
   const data={};['fullName','gender','dob','phone','email','address','lga','ward','position','institution','faculty','department','level','qualification','matricNo'].forEach(k=>data[k]=(b[k]||'').trim());
+  data.fee=priceOf(b.position);
   const ref='FISU-'+crypto.randomBytes(3).toString('hex').toUpperCase();
   const c=await pool.connect();
   try{await c.query('BEGIN');
