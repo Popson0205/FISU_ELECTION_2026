@@ -1,0 +1,66 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FISU Election Form Application</title><link rel="icon" href="logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Hanken+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css"></head><body>
+<header class="hero"><img src="logo.png" alt="FISU logo"><h1>Federation of Ido-Osun Students' Union</h1><p>Election Form Application · Knowledge is Power</p></header>
+<main class="wrap">
+<section class="card" id="gate"><h2>FISUEC eligibility criteria</h2>
+<p><small>FISUEC 2026 Publication 002 · 4/10/2026</small></p>
+<h3 style="font-size:1rem">1. General academic qualification</h3><p>A candidate must hold, or be currently pursuing, at least one of: National Diploma (ND, preliminary included), National Certificate of Education (NCE), Higher National Diploma (HND), or B.Sc./B.A./LL.B./B.Tech. or an equivalent.</p>
+<h3 style="font-size:1rem">2. President</h3><p>Must be an HND holder or undergraduate, or a B.Sc./B.A. graduate or undergraduate, or hold an equivalent qualification.</p>
+<h3 style="font-size:1rem">3. Treasurer and Auditor</h3><p>Must be studying Accountancy, Accounting or a related course at a recognised institution, or have graduated in a related field and be a qualified accountant.</p>
+<h3 style="font-size:1rem">Offices available</h3>
+<ol id="offices" style="columns:2;margin:6px 0 14px;padding-left:22px"></ol>
+<p><small>All candidates must meet the stipulated academic requirements to be considered eligible. Signed: Comr. Oyedeji Toyeeb Akolade (Chairman), Comr. Ojo Ifeoluwa (Vice Chairman), Comr. Marvelous Folorunsho (Secretary), Comr. Adeniran Wadud (PRO), Comr. Popoola Idris (Member).</small></p>
+<label style="display:flex;gap:10px;align-items:flex-start;font-weight:600"><input type="checkbox" id="agree" style="width:auto;margin-top:5px">I have read the eligibility criteria and I meet the requirements for the position I am applying for.</label><br>
+<button class="btn" id="cont" disabled>Continue to application</button></section>
+
+<form id="f" class="card-form" novalidate hidden>
+<section class="card"><h2>Personal details</h2><div class="grid">
+<label class="full">Full name<input name="fullName" required autocomplete="name"></label>
+<label>Gender<select name="gender" required><option value="">Select</option><option>Male</option><option>Female</option></select></label>
+<label>Date of birth<input type="date" name="dob" required></label>
+<label>Phone number<input type="tel" name="phone" required autocomplete="tel"></label>
+<label>Email<input type="email" name="email" required autocomplete="email"></label>
+<label class="full">Home address<textarea name="address" rows="2" required></textarea></label>
+<label>Local government (LGA) of origin<input name="lga" required></label>
+<label>Ward / community <small>(optional)</small><input name="ward"></label>
+<label class="full">Position you are applying for<select name="position" id="pos" required><option value="">Select</option></select></label>
+<label class="full" id="accBox" hidden>Accounting eligibility<select name="accounting"><option value="">Select</option><option>Currently studying Accounting / related course</option><option>Graduate and qualified accountant</option></select></label>
+</div></section>
+<section class="card"><h2>Educational background</h2><div class="grid">
+<label class="full">Qualification held or being pursued<select name="qualification" id="qual" required><option value="">Select</option><option>ND</option><option>NCE</option><option>HND</option><option>B.Sc./B.A./LL.B./B.Tech.</option><option>Equivalent qualification</option></select></label>
+<label class="full">Institution<input name="institution" required></label>
+<label>Faculty <small>(optional)</small><input name="faculty"></label>
+<label>Department<input name="department" required></label>
+<label>Level<select name="level" required><option value="">Select</option><option>ND 1</option><option>ND 2</option><option>HND 1</option><option>HND 2</option><option>100L</option><option>200L</option><option>300L</option><option>400L</option><option>500L</option><option>600L</option></select></label>
+<label>Matric / Reg. number <small>(optional)</small><input name="matricNo"></label>
+</div></section>
+<section class="card"><h2>Documents</h2><div class="grid">
+<label>Passport photograph<input type="file" name="passport" accept="image/*" required></label>
+<label>Proof of admission<input type="file" name="admission" accept="image/*,.pdf" required></label>
+<label class="full">Proof of LGA of origin <small>(if available)</small><input type="file" name="lgaProof" accept="image/*,.pdf"></label>
+</div><p><small>JPG, PNG or PDF. Maximum 3MB per file.</small></p></section>
+<section class="card"><h2>Payment</h2>
+<div class="pay" id="pay">Loading payment details…</div><div class="grid">
+<label>Payment reference / teller no.<input name="paymentRef" required></label>
+<label>Upload payment receipt<input type="file" name="receipt" accept="image/*,.pdf" required></label></div></section>
+<button class="btn" id="go">Submit application</button><p class="err" id="err" role="alert"></p>
+</form>
+<section class="card done" id="ok" hidden><h2 style="border:0;padding:0">Application received</h2><p>Keep your reference number. The electoral committee will review your payment and documents.</p><div class="ref" id="ref"></div><p><button class="btn sm" onclick="location.reload()">Submit another</button></p></section>
+</main><footer>© Federation of Ido-Osun Students' Union · National Headquarter</footer>
+<script>
+agree.onchange=()=>cont.disabled=!agree.checked;
+cont.onclick=()=>{gate.hidden=true;f.hidden=false;scrollTo(0,0)};
+pos.onchange=()=>{const a=['Treasurer','Auditor'].includes(pos.value);accBox.hidden=!a;accBox.querySelector('select').required=a};
+fetch('/api/config').then(r=>r.json()).then(c=>{
+ offices.innerHTML=c.positions.map(p=>`<li>${p}</li>`).join('');pos.innerHTML+=c.positions.map(p=>`<option>${p}</option>`).join('');
+ pay.innerHTML=`Form fee: <b>${c.price}</b><br>Pay to <b>${c.accNo}</b> — ${c.accName} (${c.bank}). Upload the receipt below.`});
+f.onsubmit=async e=>{e.preventDefault();err.textContent='';
+ if(pos.value==='President'&&!/^(HND|B\.Sc|Equivalent)/.test(qual.value)){err.textContent='The President must hold or be pursuing an HND, B.Sc./B.A. or equivalent.';return}
+ if(!f.checkValidity()){f.reportValidity();return}
+ go.disabled=true;go.textContent='Submitting…';
+ try{const r=await fetch('/api/apply',{method:'POST',body:new FormData(f)});const d=await r.json();
+  if(!r.ok)throw new Error(d.error);f.hidden=true;ok.hidden=false;ref.textContent=d.ref;scrollTo(0,0)}
+ catch(x){err.textContent=x.message;go.disabled=false;go.textContent='Submit application'}};
+</script></body></html>
