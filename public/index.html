@@ -1,72 +1,8 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FISU Election Form Application</title><link rel="icon" href="logo.png">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Hanken+Grotesk:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css"></head><body>
-<header class="hero"><img src="logo.png" alt="FISU logo"><h1>Federation of Ido-Osun Students' Union</h1><p>Election Form Application · Knowledge is Power</p></header>
-<main class="wrap">
-<section class="card" id="gate"><h2>FISUEC eligibility criteria</h2>
-<p><small>FISUEC 2026 Publication 002 · 4/10/2026</small></p>
-<h3 style="font-size:1rem">1. General academic qualification</h3><p>A candidate must hold, or be currently pursuing, at least one of: National Diploma (ND, preliminary included), National Certificate of Education (NCE), Higher National Diploma (HND), or B.Sc./B.A./LL.B./B.Tech. or an equivalent.</p>
-<h3 style="font-size:1rem">2. President</h3><p>Must be an HND holder or undergraduate, or a B.Sc./B.A. graduate or undergraduate, or hold an equivalent qualification.</p>
-<h3 style="font-size:1rem">3. Treasurer and Auditor</h3><p>Must be studying Accountancy, Accounting or a related course at a recognised institution, or have graduated in a related field and be a qualified accountant.</p>
-<h3 style="font-size:1rem">Offices available and form fees</h3>
-<ol id="offices" style="columns:2;margin:6px 0 14px;padding-left:22px"></ol>
-<p><small>The committee makes the final decision on each candidate's eligibility. All candidates must meet the stipulated academic requirements to be considered eligible. Signed: Comr. Oyedeji Toyeeb Akolade (Chairman), Comr. Ojo Ifeoluwa (Vice Chairman), Comr. Marvelous Folorunsho (Secretary), Comr. Adeniran Wadud (PRO), Comr. Popoola Idris (Member).</small></p>
-<label style="display:flex;gap:10px;align-items:flex-start;font-weight:600"><input type="checkbox" id="agree" style="width:auto;margin-top:5px">I have read the eligibility criteria and I meet the requirements for the position I am applying for.</label><br>
-<button class="btn" id="cont" disabled>Continue to application</button></section>
-
-<form id="f" class="card-form" novalidate hidden>
-<section class="card"><h2>Personal details</h2><div class="grid">
-<label class="full">Full name<input name="fullName" required autocomplete="name"></label>
-<label>Gender<select name="gender" required><option value="">Select</option><option>Male</option><option>Female</option></select></label>
-<label>Date of birth<input type="date" name="dob" required></label>
-<label>Phone number<input type="tel" name="phone" required autocomplete="tel"></label>
-<label>Email<input type="email" name="email" required autocomplete="email"></label>
-<label class="full">Home address<textarea name="address" rows="2" required></textarea></label>
-<label>Local government (LGA) of origin<input name="lga" required></label>
-<label>Ward / community <small>(optional)</small><input name="ward"></label>
-<label class="full">Position you are applying for<select name="position" id="pos" required><option value="">Select</option></select></label>
-</div></section>
-<section class="card"><h2>Educational background</h2><div class="grid">
-<label class="full">Qualification held or being pursued<select name="qualification" id="qual" required></select><small id="qhint"></small></label>
-<label class="full">Institution<input name="institution" required></label>
-<label>Faculty <small>(optional)</small><input name="faculty"></label>
-<label>Department<input name="department" required></label>
-<label>Level<select name="level" id="lvl" required></select></label>
-<label>Matric / Reg. number <small>(optional)</small><input name="matricNo"></label>
-</div></section>
-<section class="card"><h2>Documents</h2><div class="grid">
-<label>Passport photograph<input type="file" name="passport" accept="image/*" required></label>
-<label>Proof of admission<input type="file" name="admission" accept="image/*,.pdf" required></label>
-<label class="full">Proof of LGA of origin <small>(if available)</small><input type="file" name="lgaProof" accept="image/*,.pdf"></label>
-</div><p><small>JPG, PNG or PDF. Maximum 3MB per file.</small></p></section>
-<section class="card"><h2>Payment</h2>
-<div class="pay" id="pay">Loading payment details…</div><div class="grid">
-<label class="full">Upload payment receipt<input type="file" name="receipt" accept="image/*,.pdf" required></label></div></section>
-<button class="btn" id="go">Submit application</button><p class="err" id="err" role="alert"></p>
-</form>
-<section class="card done" id="ok" hidden><h2 style="border:0;padding:0">Application received</h2><p>Keep your reference number. The electoral committee will review your payment and documents.</p><div class="ref" id="ref"></div><p><button class="btn sm" onclick="location.reload()">Submit another</button></p></section>
-</main><footer>© Federation of Ido-Osun Students' Union · National Headquarter</footer>
-<script>
-agree.onchange=()=>cont.disabled=!agree.checked;
-cont.onclick=()=>{gate.hidden=true;f.hidden=false;scrollTo(0,0)};
-const ALL=['ND','NCE','HND','B.Sc.','B.A.','LL.B.','B.Tech.','Equivalent qualification'];
-const LV={'ND':['Preliminary ND','ND 1','ND 2','Graduate'],'NCE':['NCE 1','NCE 2','NCE 3','Graduate'],'HND':['HND 1','HND 2','Graduate'],'Equivalent qualification':['Current student','Graduate']};
-const DEG=['100L','200L','300L','400L','500L','600L','Graduate'];
-const opts=(el,l,ph)=>el.innerHTML=`<option value="">${ph}</option>`+l.map(x=>`<option>${x}</option>`).join('');
-pos.onchange=()=>{showPay();const p=pos.value==='President';
- opts(qual,pos.value?(p?ALL.filter(x=>x!=='ND'&&x!=='NCE'):ALL):[],pos.value?'Select':'Select position first');
- qhint.textContent=p?' President: HND, B.Sc., B.A., LL.B., B.Tech. or equivalent only.':'';opts(lvl,[],'Select qualification first')};
-qual.onchange=()=>opts(lvl,qual.value?(LV[qual.value]||DEG):[],qual.value?'Select':'Select qualification first');
-opts(qual,[],'Select position first');opts(lvl,[],'Select qualification first');
-let C;const money=n=>'₦'+Number(n).toLocaleString('en-NG');
-const showPay=()=>{if(!C)return;const fee=C.fees[pos.value];pay.innerHTML=(fee?`Form fee for <b>${pos.value}</b>: <b>${money(fee)}</b>`:'Select a position above to see the form fee.')+`<br>Pay to <b>${C.accNo}</b> — ${C.accName} (${C.bank}). Upload the receipt below.`};
-fetch('/api/config').then(r=>r.json()).then(c=>{C=c;
- offices.innerHTML=c.positions.map(p=>`<li>${p} — ${money(c.fees[p])}</li>`).join('');pos.innerHTML+=c.positions.map(p=>`<option>${p}</option>`).join('');showPay()});
-f.onsubmit=async e=>{e.preventDefault();err.textContent='';
- if(!f.checkValidity()){f.reportValidity();return}
- go.disabled=true;go.textContent='Submitting…';
- try{const r=await fetch('/api/apply',{method:'POST',body:new FormData(f)});const d=await r.json();
-  if(!r.ok)throw new Error(d.error);f.hidden=true;ok.hidden=false;ref.textContent=d.ref;scrollTo(0,0)}
- catch(x){err.textContent=x.message;go.disabled=false;go.textContent='Submit application'}};
-</script></body></html>
+<title>FISUEC 2026 Portal</title><link rel="icon" href="logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Hanken+Grotesk:wght@400;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css"></head><body>
+<header class="hero"><img src="logo.png" alt="FISU logo"><h1>Federation of Ido-Osun Students' Union</h1><p>FISUEC 2026 Election Portal · Knowledge is Power</p></header>
+<main class="wrap"><div class="choices">
+<a class="choice" href="/register"><h2>Voters Registration</h2><p>Register to vote in the upcoming FISU election.</p><span class="go">Register now →</span></a>
+<a class="choice" href="/apply"><h2>Applicant</h2><p>Apply for an executive position and get your election form.</p><span class="go">Apply now →</span></a>
+</div></main><footer>© Federation of Ido-Osun Students' Union · National Headquarter</footer></body></html>

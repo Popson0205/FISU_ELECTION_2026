@@ -6,32 +6,50 @@
 <header class="hero" style="padding-bottom:50px"><img src="logo.png" alt="" style="width:80px"><h1>Admin portal</h1></header>
 <main class="wrap" style="max-width:960px">
 <section class="card" id="login" style="max-width:380px;margin:0 auto"><h2>Sign in</h2><label>Password<input type="password" id="pw"></label><br><button class="btn" id="in">Sign in</button><p class="err" id="e"></p></section>
-<section class="card" id="app" hidden><h2><span id="count">Applicants</span></h2><input id="q" placeholder="Search name, reference, position…" style="margin-bottom:12px">
-<div style="overflow-x:auto"><table><thead><tr><th>Ref</th><th>Name</th><th>Position</th><th>Status</th><th>Date</th></tr></thead><tbody id="rows"></tbody></table></div></section>
-</main>
+<section class="card" id="app" hidden>
+<div class="tabs"><button id="tA" class="on">Applicants</button><button id="tV">Voters</button></div>
+<h2><span id="count"></span></h2>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><input id="q" placeholder="Search name, ID, phone…" style="flex:1;min-width:160px;margin:0"><select id="sf" style="width:auto;margin:0"></select>
+<span id="vtools" hidden style="display:flex;gap:8px"><button class="btn sm" id="csv">Download list (CSV)</button><button class="btn sm alt" id="prt">Print list</button></span></div>
+<div style="overflow-x:auto"><table><thead id="th"></thead><tbody id="rows"></tbody></table></div></section></main>
 <div class="modal" id="m"><div class="tools"><button class="btn sm" id="dl">Download image</button><button class="btn sm alt" id="sh">Share image</button>
-<select id="st" style="width:auto;margin:0"><option>Pending</option><option>Qualified</option><option>Rejected</option></select><button class="btn sm" style="background:#555" id="x">Close</button></div>
+<select id="st" style="width:auto;margin:0"></select><button class="btn sm" style="background:#555" id="x">Close</button></div>
 <div class="profile" id="card"></div><p class="docs" id="docs" style="text-align:center;margin-top:12px"></p></div>
 <script>
-let all=[],cur;const $=id=>document.getElementById(id);
+let all=[],cur,T='app';const $=id=>document.getElementById(id);
 const esc=s=>String(s||'—').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-async function load(){const r=await fetch('/api/admin/list');if(!r.ok)return;all=await r.json();$('login').hidden=true;$('app').hidden=false;draw()}
-function draw(){const t=$('q').value.toLowerCase();const l=all.filter(a=>(a.ref+JSON.stringify(a.data)).toLowerCase().includes(t));
- $('count').textContent=`${l.length} applicant${l.length==1?'':'s'}`;
- $('rows').innerHTML=l.map(a=>`<tr class="row" data-id="${a.id}"><td>${a.ref}</td><td>${esc(a.data.fullName)}</td><td>${esc(a.data.position)}</td><td><span class="tag ${a.status}">${a.status}</span></td><td>${new Date(a.created_at).toLocaleDateString()}</td></tr>`).join('')||'<tr><td colspan=5>No applications yet.</td></tr>'}
-$('q').oninput=draw;$('rows').onclick=e=>{const tr=e.target.closest('tr.row');if(tr)open(+tr.dataset.id)};
+const K={app:{list:'/api/admin/list',file:'/api/admin/file/',st:'/api/admin/status/',ok:'Qualified',sts:['Pending','Qualified','Rejected'],h:['Ref','Name','Position','Status','Date'],c:a=>[a.ref,a.data.fullName,a.data.position]},
+ vot:{list:'/api/admin/voters',file:'/api/admin/voter-file/',st:'/api/admin/voter-status/',ok:'Verified',sts:['Pending','Verified','Rejected'],h:['Voter ID','Name','Category','Status','Date'],c:a=>[a.ref,a.data.fullName,a.data.category]}};
+async function load(){const r=await fetch(K[T].list);if(!r.ok)return;all=await r.json();$('login').hidden=true;$('app').hidden=false;$('vtools').hidden=T!=='vot';
+ $('sf').innerHTML='<option value="">All statuses</option>'+K[T].sts.map(x=>`<option>${x}</option>`).join('');
+ $('th').innerHTML='<tr>'+K[T].h.map(h=>`<th>${h}</th>`).join('')+'</tr>';draw()}
+const list=()=>{const t=$('q').value.toLowerCase(),f=$('sf').value;return all.filter(a=>(!f||a.status===f)&&(a.ref+JSON.stringify(a.data)).toLowerCase().includes(t))};
+const sorted=()=>list().sort((a,b)=>a.data.fullName.localeCompare(b.data.fullName));
+function draw(){const l=list();$('count').textContent=`${l.length} ${T=='app'?'applicant':'voter'}${l.length==1?'':'s'}`;
+ $('rows').innerHTML=l.map(a=>`<tr class="row" data-id="${a.id}">${K[T].c(a).map(x=>`<td>${esc(x)}</td>`).join('')}<td><span class="tag ${a.status}">${a.status}</span></td><td>${new Date(a.created_at).toLocaleDateString()}</td></tr>`).join('')||'<tr><td colspan=5>Nothing here yet.</td></tr>'}
+$('q').oninput=draw;$('sf').onchange=draw;$('rows').onclick=e=>{const tr=e.target.closest('tr.row');if(tr)view(+tr.dataset.id)};
+const tab=t=>{T=t;$('tA').classList.toggle('on',t=='app');$('tV').classList.toggle('on',t=='vot');$('q').value='';load()};
+$('tA').onclick=()=>tab('app');$('tV').onclick=()=>tab('vot');
 $('in').onclick=async()=>{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('pw').value})});r.ok?load():$('e').textContent='Wrong password.'};
-function open(id){cur=all.find(a=>a.id==id);const d=cur.data,row=(k,v)=>`<dt>${k}</dt><dd>${esc(v)}</dd>`;
- $('card').innerHTML=`<div class="top"><img src="logo.png"><div><b>FISU Election Form Applicant</b><span>Ref: ${cur.ref}</span></div></div><div class="qbadge" id="qb" hidden>✔ Qualified</div>
- <div class="id"><img class="ph" src="/api/admin/file/${id}/passport"><div><h3>${esc(d.fullName)}</h3><div class="pos">Position applying for:<b>${esc(d.position)}</b></div></div></div>
- <dl>${row('Gender',d.gender)}${row('Date of birth',d.dob)}${row('Phone',d.phone)}${row('Email',d.email)}${row('LGA',d.lga+(d.ward?' / '+d.ward:''))}${row('Address',d.address)}${row('Institution',d.institution)}${row('Department',d.department+(d.faculty?' ('+d.faculty+')':''))}${row('Qualification',d.qualification)}${row('Level',d.level)}${row('Matric no.',d.matricNo)}${d.fee?row('Form fee','₦'+Number(d.fee).toLocaleString('en-NG')):''}</dl><div class="ft">Knowledge is Power · FISU-NHQ</div>`;
- $('docs').innerHTML=['admission','lgaProof','receipt'].map(k=>`<a target="_blank" href="/api/admin/file/${id}/${k}">${{admission:'Admission',lgaProof:'LGA proof',receipt:'Receipt'}[k]}</a>`).join('');
- $('st').value=cur.status;$('qb').hidden=cur.status!=='Qualified';$('m').classList.add('on')}
+const badge=()=>{$('qb').hidden=cur.status!==K[T].ok;$('qb').textContent='✔ '+K[T].ok};
+function view(id){cur=all.find(a=>a.id==id);const d=cur.data,k=K[T],app=T=='app',F=k.file+id+'/',row=(a,v)=>v?`<dt>${a}</dt><dd>${esc(v)}</dd>`:'';
+ $('card').innerHTML=`<div class="top"><img src="logo.png"><div><b>${app?'FISU Election Form Applicant':'FISU Registered Voter'}</b><span>${app?'Ref':'Voter ID'}: ${cur.ref}</span></div></div><div class="qbadge" id="qb" hidden></div>
+ <div class="id"><img class="ph" src="${F}passport"><div><h3>${esc(d.fullName)}</h3><div class="pos">${app?'Position applying for:':'Category:'}<b>${esc(app?d.position:d.category)}</b></div></div></div>
+ <dl>${row('Gender',d.gender)}${row('Date of birth',d.dob)}${row('Phone',d.phone)}${row('Email',d.email)}${row('LGA',d.lga+(d.ward?' / '+d.ward:''))}${row('Address',d.address)}${app?row('Institution',d.institution)+row('Department',d.department+(d.faculty?' ('+d.faculty+')':''))+row('Qualification',d.qualification)+row('Level',d.level)+row('Matric no.',d.matricNo)+row('Form fee',d.fee&&'₦'+Number(d.fee).toLocaleString('en-NG')):row('Residency',d.residency+(d.years?` (${d.years} yrs in town)`:''))+row(d.school?'School':'Institution',d.school||d.institution)+row('Course',d.course)}</dl><div class="ft">Knowledge is Power · FISU-NHQ</div>`;
+ $('docs').innerHTML=(app?['admission','lgaProof','receipt']:['lgaProof','receipt']).map(x=>`<a target="_blank" href="${F}${x}">${{admission:'Admission',lgaProof:'LGA proof',receipt:'Receipt'}[x]}</a>`).join('');
+ $('st').innerHTML=k.sts.map(x=>`<option>${x}</option>`).join('');$('st').value=cur.status;badge();$('m').classList.add('on')}
 $('x').onclick=()=>$('m').classList.remove('on');
-$('st').onchange=async()=>{await fetch('/api/admin/status/'+cur.id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:$('st').value})});cur.status=$('st').value;$('qb').hidden=cur.status!=='Qualified';draw()};
+$('st').onchange=async()=>{await fetch(K[T].st+cur.id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:$('st').value})});cur.status=$('st').value;badge();draw()};
 const snap=async()=>{const c=await html2canvas($('card'),{scale:2,useCORS:true,backgroundColor:null});return new Promise(r=>c.toBlob(r,'image/png'))};
 $('dl').onclick=async()=>{const a=document.createElement('a');a.href=URL.createObjectURL(await snap());a.download=cur.ref+'.png';a.click()};
 $('sh').onclick=async()=>{const f=new File([await snap()],cur.ref+'.png',{type:'image/png'});
  if(navigator.canShare&&navigator.canShare({files:[f]}))navigator.share({files:[f],title:cur.data.fullName}).catch(()=>{});else $('dl').click()};
+$('csv').onclick=()=>{const H=['No','Voter ID','Full name','Gender','Date of birth','Phone','Email','Address','LGA of origin','Ward','Residency','Years in town','Category','School / Institution','Course','Status','Registered'];
+ const R=sorted().map((a,i)=>{const d=a.data;return[i+1,a.ref,d.fullName,d.gender,d.dob,'="'+d.phone+'"',d.email,d.address,d.lga,d.ward,d.residency,d.years,d.category,d.school||d.institution,d.course,a.status,new Date(a.created_at).toLocaleDateString()]});
+ const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+[H,...R].map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv'}));a.download='FISU-voters.csv';a.click()};
+$('prt').onclick=()=>{const l=sorted(),w=window.open('','_blank');
+ w.document.write(`<title>FISU Voters List</title><style>body{font:13px sans-serif}table{width:100%;border-collapse:collapse}td,th{border:1px solid #444;padding:4px 6px;text-align:left}img{width:46px;height:56px;object-fit:cover}tr{page-break-inside:avoid}</style><h2>FISU Voters Accreditation List (${l.length})</h2><table><tr><th>No</th><th>Photo</th><th>Name</th><th>Voter ID</th><th>Phone</th><th>Category</th><th>Signature</th></tr>${l.map((a,i)=>`<tr><td>${i+1}</td><td><img src="/api/admin/voter-file/${a.id}/passport"></td><td>${esc(a.data.fullName)}</td><td>${a.ref}</td><td>${esc(a.data.phone)}</td><td>${esc(a.data.category)}</td><td style="width:110px"></td></tr>`).join('')}</table>`);
+ w.document.close();setTimeout(()=>w.print(),1500+l.length*40)};
 load();
 </script></body></html>

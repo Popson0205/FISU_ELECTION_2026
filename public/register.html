@@ -1,0 +1,56 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FISU Voters Registration</title><link rel="icon" href="logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Hanken+Grotesk:wght@400;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css"></head><body>
+<header class="hero"><a class="back" href="/">← Back</a><br><img src="logo.png" alt="FISU logo"><h1>Voters Registration</h1><p>FISUEC 2026 · Federation of Ido-Osun Students' Union</p></header>
+<main class="wrap">
+<section class="card" id="gate"><h2>Who can register</h2>
+<ol><li>You must be currently in <b>SSS 3</b>, or be an <b>undergraduate</b> or a <b>graduate</b>.</li>
+<li>You must be an <b>indigene</b> of the town, or a <b>non-indigene who has lived in the town for at least 5 years</b>.</li></ol>
+<div class="note"><b>SSS 3 students:</b> your proof of studentship is your promotion report sheet to SSS 3. Bring it with you to the venue on election day.</div>
+<label style="display:flex;gap:10px;align-items:flex-start;font-weight:600"><input type="checkbox" id="agree" style="width:auto;margin-top:5px">I have read the requirements and I am eligible to register.</label><br>
+<button class="btn" id="cont" disabled>Continue to registration</button></section>
+<form id="f" hidden novalidate>
+<p class="note">All fields are compulsory.</p>
+<section class="card"><h2>Personal details</h2><div class="grid">
+<label class="full">Full name<input name="fullName" required autocomplete="name"></label>
+<label>Gender<select name="gender" required><option value="">Select</option><option>Male</option><option>Female</option></select></label>
+<label>Date of birth<input type="date" name="dob" required></label>
+<label>Phone number<input type="tel" name="phone" required autocomplete="tel"></label>
+<label>Email<input type="email" name="email" required></label>
+<label class="full">Home address in the town<textarea name="address" rows="2" required></textarea></label>
+<label>Local government (LGA) of origin<input name="lga" required></label>
+<label>Ward / community<input name="ward" required></label></div></section>
+<section class="card"><h2>Residency</h2><div class="grid">
+<label class="full">Are you an indigene of the town?<select name="residency" id="res" required><option value="">Select</option><option>Indigene</option><option>Non-indigene</option></select></label>
+<label class="full" id="yrBox" hidden>Years lived in the town (minimum 5)<input type="number" name="years" id="yrs" min="0" max="99" disabled></label></div></section>
+<section class="card"><h2>Educational status</h2><div class="grid">
+<label class="full">I am a<select name="category" id="cat" required><option value="">Select</option><option>SSS 3 student</option><option>Undergraduate</option><option>Graduate</option></select></label>
+<label class="full" id="sssBox" hidden>Name of school<input name="school" id="school" disabled></label>
+<div class="full note" id="sssNote" hidden>Bring your promotion report sheet to SSS 3 to the venue on election day.</div>
+<label id="instBox" hidden>Institution attended<input name="institution" id="inst" disabled></label>
+<label id="courseBox" hidden>Course / department<input name="course" id="course" disabled></label></div></section>
+<section class="card"><h2>Documents</h2><div class="grid">
+<label>Passport photograph<input type="file" name="passport" accept="image/*" required></label>
+<label>Proof of LGA of origin<input type="file" name="lgaProof" accept="image/*,.pdf" required></label></div>
+<p><small>JPG, PNG or PDF. Maximum 3MB per file.</small></p></section>
+<section class="card"><h2>Membership payment</h2><div class="pay" id="pay">Loading payment details…</div>
+<label>Upload proof of payment (₦200)<input type="file" name="receipt" accept="image/*,.pdf" required></label></section>
+<button class="btn" id="go">Register</button><p class="err" id="err" role="alert"></p></form>
+<section class="card done" id="ok" hidden><h2 style="border:0;padding:0">Registration received</h2><p>Keep your Voter ID. You will need it for accreditation on election day.</p><div class="ref" id="ref"></div><p><small>SSS 3 students: bring your promotion report sheet to the venue.</small></p><p><a class="btn sm" style="text-decoration:none;display:inline-block" href="/">Back to home</a></p></section>
+</main><footer>© Federation of Ido-Osun Students' Union · National Headquarter</footer>
+<script>
+fetch('/api/config').then(r=>r.json()).then(c=>pay.innerHTML=`Membership fee: <b>₦200</b><br>Pay to <b>${c.accNo}</b> — ${c.accName} (${c.bank}). Then upload the receipt below.`);
+agree.onchange=()=>cont.disabled=!agree.checked;
+cont.onclick=()=>{gate.hidden=true;f.hidden=false;scrollTo(0,0)};
+const tg=(box,inp,on)=>{box.hidden=!on;inp.disabled=!on;inp.required=on};
+res.onchange=()=>tg(yrBox,yrs,res.value==='Non-indigene');
+cat.onchange=()=>{const s=cat.value==='SSS 3 student',u=cat.value==='Undergraduate'||cat.value==='Graduate';
+ tg(sssBox,school,s);sssNote.hidden=!s;tg(instBox,inst,u);tg(courseBox,course,u)};
+f.onsubmit=async e=>{e.preventDefault();err.textContent='';
+ if(!f.checkValidity()){f.reportValidity();return}
+ if(res.value==='Non-indigene'&&+yrs.value<5){err.textContent='Non-indigenes must have lived in the town for at least 5 years.';return}
+ go.disabled=true;go.textContent='Submitting…';
+ try{const r=await fetch('/api/register',{method:'POST',body:new FormData(f)});const d=await r.json();
+  if(!r.ok)throw new Error(d.error);f.hidden=true;ok.hidden=false;ref.textContent=d.ref;scrollTo(0,0)}
+ catch(x){err.textContent=x.message;go.disabled=false;go.textContent='Register'}};
+</script></body></html>
