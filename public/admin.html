@@ -13,13 +13,18 @@
 <span id="vtools" hidden style="display:flex;gap:8px"><button class="btn sm" id="csv">Download list (CSV)</button><button class="btn sm alt" id="prt">Print list</button></span></div>
 <div style="overflow-x:auto"><table><thead id="th"></thead><tbody id="rows"></tbody></table></div></section></main>
 <div class="modal" id="m"><div class="tools"><button class="btn sm" id="dl">Download image</button><button class="btn sm alt" id="sh">Share image</button>
-<select id="st" style="width:auto;margin:0"></select><button class="btn sm" style="background:#555" id="x">Close</button></div>
-<div class="profile" id="card"></div><p class="docs" id="docs" style="text-align:center;margin-top:12px"></p></div>
+<button class="btn sm" style="background:#555" id="x">Close</button></div>
+<div class="profile" id="card"></div><p class="docs" id="docs" style="text-align:center;margin-top:12px"></p>
+<div class="card" style="max-width:460px;margin:14px auto 0"><h2 style="font-size:1.05rem">Review decision</h2>
+<label>Decision<select id="st"></select></label>
+<div id="mail" hidden><br><label>Email subject<input id="sub"></label><br><label>Message to the person<textarea id="msg" rows="10"></textarea></label></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn sm" id="sv">Save</button><button class="btn sm alt" id="sn" hidden>Save without email</button></div>
+<p id="dmsg" role="status" style="font-weight:600;color:var(--brown)"></p></div></div>
 <script>
 let all=[],cur,T='app';const $=id=>document.getElementById(id);
 const esc=s=>String(s||'—').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const K={app:{list:'/api/admin/list',file:'/api/admin/file/',st:'/api/admin/status/',ok:'Qualified',sts:['Pending','Qualified','Rejected'],h:['Ref','Name','Position','Status','Date'],c:a=>[a.ref,a.data.fullName,a.data.position]},
- vot:{list:'/api/admin/voters',file:'/api/admin/voter-file/',st:'/api/admin/voter-status/',ok:'Verified',sts:['Pending','Verified','Rejected'],h:['Voter ID','Name','Category','Status','Date'],c:a=>[a.ref,a.data.fullName,a.data.category]}};
+const K={app:{list:'/api/admin/list',file:'/api/admin/file/',st:'/api/admin/status/',ok:'Qualified',sts:['Pending','Qualified','Disqualified'],h:['Ref','Name','Position','Status','Date'],c:a=>[a.ref,a.data.fullName,a.data.position]},
+ vot:{list:'/api/admin/voters',file:'/api/admin/voter-file/',st:'/api/admin/voter-status/',ok:'Verified',sts:['Pending','Verified','Disqualified'],h:['Voter ID','Name','Category','Status','Date'],c:a=>[a.ref,a.data.fullName,a.data.category]}};
 async function load(){const r=await fetch(K[T].list);if(!r.ok)return;all=await r.json();$('login').hidden=true;$('app').hidden=false;$('vtools').hidden=T!=='vot';
  $('sf').innerHTML='<option value="">All statuses</option>'+K[T].sts.map(x=>`<option>${x}</option>`).join('');
  $('th').innerHTML='<tr>'+K[T].h.map(h=>`<th>${h}</th>`).join('')+'</tr>';draw()}
@@ -35,17 +40,32 @@ const badge=()=>{$('qb').hidden=cur.status!==K[T].ok;$('qb').textContent='✔ '+
 function view(id){cur=all.find(a=>a.id==id);const d=cur.data,k=K[T],app=T=='app',F=k.file+id+'/',row=(a,v)=>v?`<dt>${a}</dt><dd>${esc(v)}</dd>`:'';
  $('card').innerHTML=`<div class="top"><img src="logo.png"><div><b>${app?'FISU Election Form Applicant':'FISU Registered Voter'}</b><span>${app?'Ref':'Voter ID'}: ${cur.ref}</span></div></div><div class="qbadge" id="qb" hidden></div>
  <div class="id"><img class="ph" src="${F}passport"><div><h3>${esc(d.fullName)}</h3><div class="pos">${app?'Position applying for:':'Category:'}<b>${esc(app?d.position:d.category)}</b></div></div></div>
- <dl>${row('Gender',d.gender)}${row('Date of birth',d.dob)}${row('Phone',d.phone)}${row('Email',d.email)}${row('LGA',d.lga+(d.ward?' / '+d.ward:''))}${row('Address',d.address)}${app?row('Institution',d.institution)+row('Department',d.department+(d.faculty?' ('+d.faculty+')':''))+row('Qualification',d.qualification)+row('Level',d.level)+row('Matric no.',d.matricNo)+row('Form fee',d.fee&&'₦'+Number(d.fee).toLocaleString('en-NG')):row('Residency',d.residency+(d.years?` (${d.years} yrs in town)`:''))+row(d.school?'School':'Institution',d.school||d.institution)+row('Course',d.course)}</dl><div class="ft">Knowledge is Power · FISU-NHQ</div>`;
- $('docs').innerHTML=(app?['admission','lgaProof','receipt']:['lgaProof','receipt']).map(x=>`<a target="_blank" href="${F}${x}">${{admission:'Admission',lgaProof:'LGA proof',receipt:'Receipt'}[x]}</a>`).join('');
- $('st').innerHTML=k.sts.map(x=>`<option>${x}</option>`).join('');$('st').value=cur.status;badge();$('m').classList.add('on')}
+ <dl>${row('Gender',d.gender)}${row('Date of birth',d.dob)}${row('Phone',d.phone)}${row('Email',d.email)}${row('LGA',d.lga+(d.ward?' / '+d.ward:''))}${row('Address',d.address)}${app?row('Institution',d.institution)+row('Department',d.department+(d.faculty?' ('+d.faculty+')':''))+row('Qualification',d.qualification)+row('Level',d.level)+row('Matric no.',d.matricNo)+row('Form fee',d.fee&&'₦'+Number(d.fee).toLocaleString('en-NG')):row('Residency',d.residency+(d.years?` (${d.years} yrs in town)`:''))+row('Referee',d.refName&&d.refName+' ('+d.refPhone+')')+row(d.school?'School':'Institution',d.school||d.institution)+row('Course',d.course)}</dl><div class="ft">Knowledge is Power · FISU-NHQ</div>`;
+ $('docs').innerHTML=(app?['admission','lgaProof','receipt']:['lgaProof','receipt',...(d.category!=='SSS 3 student'?['admission']:[])]).map(x=>`<a target="_blank" href="${F}${x}">${{admission:'Admission',lgaProof:'LGA proof',receipt:'Receipt'}[x]}</a>`).join('');
+ $('st').innerHTML=k.sts.map(x=>`<option>${x}</option>`).join('');$('st').value=cur.status;badge();$('mail').hidden=true;$('sn').hidden=true;$('sv').textContent='Save';$('dmsg').textContent='';$('m').classList.add('on')}
 $('x').onclick=()=>$('m').classList.remove('on');
-$('st').onchange=async()=>{await fetch(K[T].st+cur.id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:$('st').value})});cur.status=$('st').value;badge();draw()};
+const tpl=v=>{const d=cur.data,n=d.fullName,ok=v===K[T].ok,foot="\n\nFISU Electoral Committee\nFederation of Ido-Osun Students' Union",why='Reason:\n[Type the reason here]\n\nIf you believe this is a mistake, please reply to this email or contact the electoral committee.';
+ if(T=='app')return ok?['FISUEC 2026: You are qualified',`Dear ${n},\n\nAfter reviewing your application (${cur.ref}) for the position of ${d.position}, we are pleased to inform you that you have been declared QUALIFIED to contest in the FISUEC 2026 election.\n\nCongratulations and best wishes.${foot}`]:['FISUEC 2026: Application outcome',`Dear ${n},\n\nAfter reviewing your application (${cur.ref}) for the position of ${d.position}, we regret to inform you that you have been DISQUALIFIED.\n\n${why}${foot}`];
+ return ok?['FISUEC 2026: Voter registration approved',`Dear ${n},\n\nYour voter registration (Voter ID: ${cur.ref}) has been reviewed and you are ELIGIBLE to vote in the FISUEC 2026 election. Please keep your Voter ID for accreditation on election day.${d.category==='SSS 3 student'?'\n\nAs an SSS 3 student, remember to bring your promotion report sheet to the venue.':''}${foot}`]:['FISUEC 2026: Voter registration outcome',`Dear ${n},\n\nAfter reviewing your voter registration (Voter ID: ${cur.ref}), we regret to inform you that you are NOT ELIGIBLE to vote.\n\n${why}${foot}`]};
+$('st').onchange=()=>{const v=$('st').value,mail=v===K[T].ok||v==='Disqualified';
+ $('mail').hidden=!mail;$('sn').hidden=!mail;$('sv').textContent=mail?'Save & send email':'Save';$('dmsg').textContent='';
+ if(mail){const t=tpl(v);$('sub').value=t[0];$('msg').value=t[1]}};
+async function save(send){const v=$('st').value,msg=$('msg').value;
+ if(send){if(!$('sub').value.trim()||!msg.trim())return $('dmsg').textContent='Subject and message are required.';
+  if(msg.includes('[Type the reason here]'))return $('dmsg').textContent='Replace [Type the reason here] with the actual reason first.'}
+ $('sv').disabled=$('sn').disabled=true;$('dmsg').textContent='Saving…';
+ try{const r=await fetch('/api/admin/decide/'+T+'/'+cur.id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:v,send,subject:$('sub').value,body:msg})});const d=await r.json();
+  if(!r.ok)throw new Error(d.error);cur.status=v;badge();draw();
+  $('dmsg').textContent=!send?'Saved.':d.mail.sent?'Saved. Email sent to '+cur.data.email+'.':'Saved, but the email was NOT sent: '+d.mail.error}
+ catch(e){$('dmsg').textContent=e.message}
+ $('sv').disabled=$('sn').disabled=false}
+$('sv').onclick=()=>save(!$('mail').hidden);$('sn').onclick=()=>save(false);
 const snap=async()=>{const c=await html2canvas($('card'),{scale:2,useCORS:true,backgroundColor:null});return new Promise(r=>c.toBlob(r,'image/png'))};
 $('dl').onclick=async()=>{const a=document.createElement('a');a.href=URL.createObjectURL(await snap());a.download=cur.ref+'.png';a.click()};
 $('sh').onclick=async()=>{const f=new File([await snap()],cur.ref+'.png',{type:'image/png'});
  if(navigator.canShare&&navigator.canShare({files:[f]}))navigator.share({files:[f],title:cur.data.fullName}).catch(()=>{});else $('dl').click()};
-$('csv').onclick=()=>{const H=['No','Voter ID','Full name','Gender','Date of birth','Phone','Email','Address','LGA of origin','Ward','Residency','Years in town','Category','School / Institution','Course','Status','Registered'];
- const R=sorted().map((a,i)=>{const d=a.data;return[i+1,a.ref,d.fullName,d.gender,d.dob,'="'+d.phone+'"',d.email,d.address,d.lga,d.ward,d.residency,d.years,d.category,d.school||d.institution,d.course,a.status,new Date(a.created_at).toLocaleDateString()]});
+$('csv').onclick=()=>{const H=['No','Voter ID','Full name','Gender','Date of birth','Phone','Email','Address','LGA of origin','Ward','Residency','Years in town','Referee','Referee phone','Category','School / Institution','Course','Status','Registered'];
+ const R=sorted().map((a,i)=>{const d=a.data;return[i+1,a.ref,d.fullName,d.gender,d.dob,'="'+d.phone+'"',d.email,d.address,d.lga,d.ward,d.residency,d.years,d.refName,d.refPhone?'="'+d.refPhone+'"':'',d.category,d.school||d.institution,d.course,a.status,new Date(a.created_at).toLocaleDateString()]});
  const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+[H,...R].map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv'}));a.download='FISU-voters.csv';a.click()};
 $('prt').onclick=()=>{const l=sorted(),w=window.open('','_blank');

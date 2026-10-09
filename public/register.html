@@ -22,7 +22,10 @@
 <label>Ward / community<input name="ward" required></label></div></section>
 <section class="card"><h2>Residency</h2><div class="grid">
 <label class="full">Are you an indigene of the town?<select name="residency" id="res" required><option value="">Select</option><option>Indigene</option><option>Non-indigene</option></select></label>
-<label class="full" id="yrBox" hidden>Years lived in the town (minimum 5)<input type="number" name="years" id="yrs" min="0" max="99" disabled></label></div></section>
+<label class="full" id="yrBox" hidden>Years lived in the town (minimum 5)<input type="number" name="years" id="yrs" min="0" max="99" disabled></label>
+<div class="full note" id="refNote" hidden>Provide a referee who is an <b>indigene</b> of the town and can vouch for the information you have given.</div>
+<label id="refBox" hidden>Referee's full name<input name="refName" id="refName" disabled></label>
+<label id="refPhBox" hidden>Referee's phone number<input type="tel" name="refPhone" id="refPhone" disabled></label></div></section>
 <section class="card"><h2>Educational status</h2><div class="grid">
 <label class="full">I am a<select name="category" id="cat" required><option value="">Select</option><option>SSS 3 student</option><option>Undergraduate</option><option>Graduate</option></select></label>
 <label class="full" id="sssBox" hidden>Name of school<input name="school" id="school" disabled></label>
@@ -31,7 +34,8 @@
 <label id="courseBox" hidden>Course / department<input name="course" id="course" disabled></label></div></section>
 <section class="card"><h2>Documents</h2><div class="grid">
 <label>Passport photograph<input type="file" name="passport" accept="image/*" required></label>
-<label>Proof of LGA of origin<input type="file" name="lgaProof" accept="image/*,.pdf" required></label></div>
+<label>Proof of LGA of origin<input type="file" name="lgaProof" accept="image/*,.pdf" required></label>
+<label id="admBox" hidden>Proof of admission<input type="file" name="admission" id="adm" accept="image/*,.pdf" disabled></label></div>
 <p><small>JPG, PNG or PDF. Maximum 3MB per file.</small></p></section>
 <section class="card"><h2>Membership payment</h2><div class="pay" id="pay">Loading payment details…</div>
 <label>Upload proof of payment (₦200)<input type="file" name="receipt" accept="image/*,.pdf" required></label></section>
@@ -43,12 +47,15 @@ fetch('/api/config').then(r=>r.json()).then(c=>pay.innerHTML=`Membership fee: <b
 agree.onchange=()=>cont.disabled=!agree.checked;
 cont.onclick=()=>{gate.hidden=true;f.hidden=false;scrollTo(0,0)};
 const tg=(box,inp,on)=>{box.hidden=!on;inp.disabled=!on;inp.required=on};
-res.onchange=()=>tg(yrBox,yrs,res.value==='Non-indigene');
+const sync=()=>{const n=res.value==='Non-indigene',u=cat.value==='Undergraduate'||cat.value==='Graduate';
+ tg(yrBox,yrs,n);refNote.hidden=!n;tg(refBox,refName,n);tg(refPhBox,refPhone,n);tg(admBox,adm,u)};
+res.onchange=sync;
 cat.onchange=()=>{const s=cat.value==='SSS 3 student',u=cat.value==='Undergraduate'||cat.value==='Graduate';
- tg(sssBox,school,s);sssNote.hidden=!s;tg(instBox,inst,u);tg(courseBox,course,u)};
+ tg(sssBox,school,s);sssNote.hidden=!s;tg(instBox,inst,u);tg(courseBox,course,u);sync()};
 f.onsubmit=async e=>{e.preventDefault();err.textContent='';
  if(!f.checkValidity()){f.reportValidity();return}
  if(res.value==='Non-indigene'&&+yrs.value<5){err.textContent='Non-indigenes must have lived in the town for at least 5 years.';return}
+ if(res.value==='Non-indigene'&&refPhone.value.replace(/\D/g,'')===f.phone.value.replace(/\D/g,'')){err.textContent='Your referee cannot use your own phone number.';return}
  go.disabled=true;go.textContent='Submitting…';
  try{const r=await fetch('/api/register',{method:'POST',body:new FormData(f)});const d=await r.json();
   if(!r.ok)throw new Error(d.error);f.hidden=true;ok.hidden=false;ref.textContent=d.ref;scrollTo(0,0)}
