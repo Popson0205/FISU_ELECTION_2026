@@ -10,9 +10,9 @@ const mailHtml=t=>`<div style="font-family:Arial,sans-serif;max-width:560px;marg
 async function sendMail(to,name,subject,text){
  if(!E.BREVO_API_KEY||!E.MAIL_FROM)return{sent:false,error:'Email is not set up yet (BREVO_API_KEY and MAIL_FROM are missing).'};
  try{
-  const r=await fetch('https://api.brevo.com/v3/smtp/email',{method:'POST',headers:{'api-key':E.BREVO_API_KEY,'content-type':'application/json',accept:'application/json'},
+  const r=await fetch('https://api.brevo.com/v3/smtp/email',{method:'POST',headers:{'api-key':E.BREVO_API_KEY.trim(),'content-type':'application/json',accept:'application/json'},
    body:JSON.stringify({sender:{name:E.MAIL_FROM_NAME||'FISU Electoral Committee',email:E.MAIL_FROM},...(E.REPLY_TO?{replyTo:{email:E.REPLY_TO}}:{}),to:[{email:to,name}],subject,textContent:text,htmlContent:mailHtml(text)})});
-  if(!r.ok){console.error('Mail error',r.status,await r.text());return{sent:false,error:'The mail service refused the message ('+r.status+').'}}
+  if(!r.ok){const t=await r.text();console.error('Mail error',r.status,t);let m=t;try{m=JSON.parse(t).message||t}catch{}return{sent:false,error:'Brevo said ('+r.status+'): '+String(m).slice(0,200)}}
   return{sent:true};
  }catch(e){console.error(e);return{sent:false,error:e.message}}
 }
@@ -55,7 +55,7 @@ app.post('/api/apply',up.fields(FILES.map(([name])=>({name,maxCount:1}))),async(
 
 app.post('/api/login',(q,s)=>{
  if(q.body.password!==PASS)return s.status(401).json({error:'Wrong password.'});
- s.setHeader('Set-Cookie',`fisu=${TOKEN}; HttpOnly; Path=/; Max-Age=86400; SameSite=Strict${E.NODE_ENV==='production'||E.RENDER?'; Secure':''}`);s.json({ok:1});
+ s.setHeader('Set-Cookie',`fisu=${TOKEN}; HttpOnly; Path=/; Max-Age=86400; SameSite=Strict${E.NODE_ENV==='production'||E.RENDER||E.RAILWAY_ENVIRONMENT?'; Secure':''}`);s.json({ok:1});
 });
 app.get('/api/admin/list',auth,async(q,s)=>{const r=await pool.query('SELECT id,ref,data,status,created_at FROM applicants ORDER BY id DESC');s.json(r.rows)});
 app.post('/api/admin/status/:id',auth,async(q,s)=>{await pool.query('UPDATE applicants SET status=$1 WHERE id=$2',[q.body.status,q.params.id]);s.json({ok:1})});

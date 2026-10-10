@@ -1,6 +1,7 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>FISU Voters Registration</title><link rel="icon" href="logo.png">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Hanken+Grotesk:wght@400;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css"></head><body>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Hanken+Grotesk:wght@400;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script></head><body>
 <header class="hero"><a class="back" href="/">← Back</a><br><img src="logo.png" alt="FISU logo"><h1>Voters Registration</h1><p>FISUEC 2026 · Federation of Ido-Osun Students' Union</p></header>
 <main class="wrap">
 <section class="card" id="gate"><h2>Who can register</h2>
@@ -40,7 +41,8 @@
 <section class="card"><h2>Membership payment</h2><div class="pay" id="pay">Loading payment details…</div>
 <label>Upload proof of payment (₦200)<input type="file" name="receipt" accept="image/*,.pdf" required></label></section>
 <button class="btn" id="go">Register</button><p class="err" id="err" role="alert"></p></form>
-<section class="card done" id="ok" hidden><h2 style="border:0;padding:0">Registration received</h2><p>Keep your Voter ID. You will need it for accreditation on election day.</p><div class="ref" id="ref"></div><p><small>SSS 3 students: bring your promotion report sheet to the venue.</small></p><p><a class="btn sm" style="text-decoration:none;display:inline-block" href="/">Back to home</a></p></section>
+<section class="card done" id="ok" hidden><h2 style="border:0;padding:0">Registration received</h2><p>Keep your Voter ID. You will need it for accreditation on election day.</p><div class="ref" id="ref"></div><p><small>SSS 3 students: bring your promotion report sheet to the venue.</small></p><p><button class="btn" id="png">Download voters registration card (PNG)</button></p>
+<p><a class="btn sm" style="text-decoration:none;display:inline-block" href="/">Back to home</a></p></section>
 </main><footer>© Federation of Ido-Osun Students' Union · National Headquarter</footer>
 <script>
 fetch('/api/config').then(r=>r.json()).then(c=>pay.innerHTML=`Membership fee: <b>₦200</b><br>Pay to <b>${c.accNo}</b> — ${c.accName} (${c.bank}). Then upload the receipt below.`);
@@ -57,7 +59,18 @@ f.onsubmit=async e=>{e.preventDefault();err.textContent='';
  if(res.value==='Non-indigene'&&+yrs.value<5){err.textContent='Non-indigenes must have lived in the town for at least 5 years.';return}
  if(res.value==='Non-indigene'&&refPhone.value.replace(/\D/g,'')===f.phone.value.replace(/\D/g,'')){err.textContent='Your referee cannot use your own phone number.';return}
  go.disabled=true;go.textContent='Submitting…';
- try{const r=await fetch('/api/register',{method:'POST',body:new FormData(f)});const d=await r.json();
-  if(!r.ok)throw new Error(d.error);f.hidden=true;ok.hidden=false;ref.textContent=d.ref;scrollTo(0,0)}
+ try{const fd=new FormData(f);const r=await fetch('/api/register',{method:'POST',body:fd});const d=await r.json();
+  if(!r.ok)throw new Error(d.error);f.hidden=true;ok.hidden=false;ref.textContent=d.ref;last={ref:d.ref,v:Object.fromEntries([...fd].filter(([k,x])=>typeof x==='string')),photo:URL.createObjectURL(fd.get('passport'))};scrollTo(0,0)}
  catch(x){err.textContent=x.message;go.disabled=false;go.textContent='Register'}};
+
+let last;const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+png.onclick=async()=>{png.disabled=true;png.textContent='Preparing…';
+ const v=last.v,row=(a,b)=>b?`<dt>${a}</dt><dd>${esc(b)}</dd>`:'';
+ const el=document.createElement('div');el.style.cssText='position:fixed;left:-10000px;top:0';
+ el.innerHTML=`<div class="profile"><div class="top"><img src="logo.png"><div><b>FISU Voters Registration Card</b><span>FISUEC 2026 · Voter ID: ${last.ref}</span></div></div><div class="qbadge" style="background:#8a5200">Registration received · pending verification</div><div class="id"><img class="ph" src="${last.photo}"><div><h3>${esc(v.fullName)}</h3><div class="pos">Category:<b>${esc(v.category)}</b></div></div></div><dl>${row('Voter ID',last.ref)}${row('Gender',v.gender)}${row('Date of birth',v.dob)}${row('Phone',v.phone)}${row('LGA',v.lga)}${row('Residency',v.residency)}${row(v.school?'School':'Institution',v.school||v.institution)}${v.category==='SSS 3 student'?row('Bring','Promotion report sheet'):''}</dl><div class="ft">Keep this card · Knowledge is Power · FISU-NHQ</div></div>`;
+ document.body.appendChild(el);
+ await Promise.all([...el.querySelectorAll('img')].map(i=>i.complete?1:new Promise(r=>i.onload=i.onerror=r)));
+ const c=await html2canvas(el.firstChild,{scale:3,backgroundColor:null});el.remove();
+ const a=document.createElement('a');a.href=c.toDataURL('image/png');a.download=`FISU-Voter-Card-${last.ref}.png`;a.click();
+ png.disabled=false;png.textContent='Download voters registration card (PNG)'};
 </script></body></html>

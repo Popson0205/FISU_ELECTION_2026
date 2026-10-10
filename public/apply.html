@@ -1,7 +1,9 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>FISU Election Form Application</title><link rel="icon" href="logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Hanken+Grotesk:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css"></head><body>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script></head><body>
 <header class="hero"><a class="back" href="/">← Back</a><br><img src="logo.png" alt="FISU logo"><h1>Federation of Ido-Osun Students' Union</h1><p>Election Form Application · Knowledge is Power</p></header>
 <main class="wrap">
 <section class="card" id="gate"><h2>FISUEC eligibility criteria</h2>
@@ -46,7 +48,8 @@
 <label class="full">Upload payment receipt<input type="file" name="receipt" accept="image/*,.pdf" required></label></div></section>
 <button class="btn" id="go">Submit application</button><p class="err" id="err" role="alert"></p>
 </form>
-<section class="card done" id="ok" hidden><h2 style="border:0;padding:0">Application received</h2><p>Keep your reference number. The electoral committee will review your payment and documents.</p><div class="ref" id="ref"></div><p><button class="btn sm" onclick="location.reload()">Submit another</button></p></section>
+<section class="card done" id="ok" hidden><h2 style="border:0;padding:0">Application received</h2><p>Keep your reference number. The electoral committee will review your payment and documents.</p><div class="ref" id="ref"></div><p><button class="btn" id="pdf">Download application form (PDF)</button></p>
+<p><button class="btn sm" onclick="location.reload()">Submit another</button></p></section>
 </main><footer>© Federation of Ido-Osun Students' Union · National Headquarter</footer>
 <script>
 agree.onchange=()=>cont.disabled=!agree.checked;
@@ -67,7 +70,23 @@ fetch('/api/config').then(r=>r.json()).then(c=>{C=c;
 f.onsubmit=async e=>{e.preventDefault();err.textContent='';
  if(!f.checkValidity()){f.reportValidity();return}
  go.disabled=true;go.textContent='Submitting…';
- try{const r=await fetch('/api/apply',{method:'POST',body:new FormData(f)});const d=await r.json();
-  if(!r.ok)throw new Error(d.error);f.hidden=true;ok.hidden=false;ref.textContent=d.ref;scrollTo(0,0)}
+ try{const fd=new FormData(f);const r=await fetch('/api/apply',{method:'POST',body:fd});const d=await r.json();
+  if(!r.ok)throw new Error(d.error);f.hidden=true;ok.hidden=false;ref.textContent=d.ref;last={ref:d.ref,v:Object.fromEntries([...fd].filter(([k,x])=>typeof x==='string')),photo:URL.createObjectURL(fd.get('passport')),files:[['Passport photograph','passport'],['Proof of admission','admission'],['Proof of LGA of origin','lgaProof'],['Payment receipt','receipt']].map(([n,k])=>[n,fd.get(k).name])};scrollTo(0,0)}
  catch(x){err.textContent=x.message;go.disabled=false;go.textContent='Submit application'}};
+
+let last;const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sec=(t,rows)=>`<div style="background:#4a2410;color:#fff;padding:5px 10px;font:700 13px Arial;margin-top:12px">${t}</div><table style="width:100%;border-collapse:collapse;font-size:13px">${rows.map(([a,b])=>`<tr><td style="width:34%;color:#7a3e14;font-weight:700;padding:4px 8px;border-bottom:1px solid #eadfce">${a}</td><td style="padding:4px 8px;border-bottom:1px solid #eadfce">${esc(b)}</td></tr>`).join('')}</table>`;
+const sheet=()=>{const v=last.v;return `<div style="display:flex;align-items:center;gap:16px;border-bottom:3px solid #e8851e;padding-bottom:12px"><img src="logo.png" style="width:84px;height:84px;object-fit:contain"><div style="flex:1"><div style="font:700 21px Georgia,serif;color:#4a2410">Federation of Ido-Osun Students' Union</div><div style="font:700 15px Arial;color:#7a3e14;margin-top:3px">FISUEC 2026 · Election Form Application</div><div style="font-size:13px;margin-top:4px">Reference: <b>${last.ref}</b> &nbsp;·&nbsp; Date: ${new Date().toLocaleDateString('en-GB')}</div></div><img src="${last.photo}" style="width:104px;height:128px;object-fit:cover;border:3px solid #e8851e"></div>`
++sec('Position applied for',[['Position',v.position],['Form fee',money(C.fees[v.position])]])
++sec('Personal details',[['Full name',v.fullName],['Gender',v.gender],['Date of birth',v.dob],['Phone',v.phone],['Email',v.email],['Address',v.address],['LGA of origin',v.lga],['Ward / community',v.ward]])
++sec('Educational background',[['Institution',v.institution],['Faculty',v.faculty],['Department',v.department],['Qualification',v.qualification],['Level',v.level],['Matric / Reg. no.',v.matricNo]])
++sec('Documents submitted',last.files)
++`<div style="margin-top:14px;font-size:12.5px">I declare that the information given in this form is true and complete.</div><div style="display:flex;justify-content:space-between;margin-top:30px;font-size:12px"><div style="border-top:1px solid #333;width:46%;padding-top:4px">Applicant's signature</div><div style="border-top:1px solid #333;width:46%;padding-top:4px">Date</div></div><div style="margin-top:14px;font-size:11.5px;color:#6b5646">Submitting this form does not guarantee qualification. The electoral committee will review your application and notify you by email.</div>`};
+pdf.onclick=async()=>{pdf.disabled=true;pdf.textContent='Preparing…';
+ const el=document.createElement('div');el.style.cssText="position:fixed;left:-10000px;top:0;width:794px;height:1123px;overflow:hidden;background:#fff;color:#2a1a10;font-family:'Hanken Grotesk',Arial,sans-serif;box-sizing:border-box;border:10px solid #7a3e14;padding:22px 30px";
+ el.innerHTML=sheet();document.body.appendChild(el);
+ await Promise.all([...el.querySelectorAll('img')].map(i=>i.complete?1:new Promise(r=>i.onload=i.onerror=r)));
+ const c=await html2canvas(el,{scale:2,backgroundColor:'#fff'});el.remove();
+ const p=new window.jspdf.jsPDF('p','mm','a4');p.addImage(c.toDataURL('image/jpeg',.92),'JPEG',0,0,210,297);p.save(`FISU-Application-${last.ref}.pdf`);
+ pdf.disabled=false;pdf.textContent='Download application form (PDF)'};
 </script></body></html>
