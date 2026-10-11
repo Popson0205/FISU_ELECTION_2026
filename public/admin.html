@@ -7,11 +7,11 @@
 <main class="wrap" style="max-width:960px">
 <section class="card" id="login" style="max-width:380px;margin:0 auto"><h2>Sign in</h2><label>Password<input type="password" id="pw"></label><br><button class="btn" id="in">Sign in</button><p class="err" id="e"></p></section>
 <section class="card" id="app" hidden>
-<div class="tabs"><button id="tA" class="on">Applicants</button><button id="tV">Voters</button></div>
-<h2><span id="count"></span></h2>
+<div class="tabs"><button id="tA" class="on">Applicants</button><button id="tV">Voters</button><button id="tE">Voting</button></div>
+<div id="lst"><h2><span id="count"></span></h2>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><input id="q" placeholder="Search name, ID, phone…" style="flex:1;min-width:160px;margin:0"><select id="sf" style="width:auto;margin:0"></select>
 <span id="vtools" hidden style="display:flex;gap:8px"><button class="btn sm" id="csv">Download list (CSV)</button><button class="btn sm alt" id="prt">Print list</button></span></div>
-<div style="overflow-x:auto"><table><thead id="th"></thead><tbody id="rows"></tbody></table></div></section></main>
+<div style="overflow-x:auto"><table><thead id="th"></thead><tbody id="rows"></tbody></table></div></div><div id="vsec" hidden></div></section></main><div class="pw"><img src="geoestate.png" alt="GeoEstate Spatial Intelligence"><span>Powered by <b>GeoEstate NIG Limited</b></span></div>
 <div class="modal" id="m"><div class="tools"><button class="btn sm" id="dl">Download image</button><button class="btn sm alt" id="sh">Share image</button>
 <button class="btn sm" style="background:#555" id="x">Close</button></div>
 <div class="profile" id="card"></div><p class="docs" id="docs" style="text-align:center;margin-top:12px"></p>
@@ -33,7 +33,8 @@ const sorted=()=>list().sort((a,b)=>a.data.fullName.localeCompare(b.data.fullNam
 function draw(){const l=list();$('count').textContent=`${l.length} ${T=='app'?'applicant':'voter'}${l.length==1?'':'s'}`;
  $('rows').innerHTML=l.map(a=>`<tr class="row" data-id="${a.id}">${K[T].c(a).map(x=>`<td>${esc(x)}</td>`).join('')}<td><span class="tag ${a.status}">${a.status}</span></td><td>${new Date(a.created_at).toLocaleDateString()}</td></tr>`).join('')||'<tr><td colspan=5>Nothing here yet.</td></tr>'}
 $('q').oninput=draw;$('sf').onchange=draw;$('rows').onclick=e=>{const tr=e.target.closest('tr.row');if(tr)view(+tr.dataset.id)};
-const tab=t=>{T=t;$('tA').classList.toggle('on',t=='app');$('tV').classList.toggle('on',t=='vot');$('q').value='';load()};
+const tab=t=>{T=t;const m={A:'app',V:'vot',E:'vote'};for(const x in m)$('t'+x).classList.toggle('on',m[x]==t);
+ const e=t=='vote';$('lst').hidden=e;$('vsec').hidden=!e;$('q').value='';e?loadVote():load()};$('tE').onclick=()=>tab('vote');
 $('tA').onclick=()=>tab('app');$('tV').onclick=()=>tab('vot');
 $('in').onclick=async()=>{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('pw').value})});r.ok?load():$('e').textContent='Wrong password.'};
 const badge=()=>{$('qb').hidden=cur.status!==K[T].ok;$('qb').textContent='✔ '+K[T].ok};
@@ -71,5 +72,31 @@ $('csv').onclick=()=>{const H=['No','Voter ID','Full name','Gender','Date of bir
 $('prt').onclick=()=>{const l=sorted(),w=window.open('','_blank');
  w.document.write(`<title>FISU Voters List</title><style>body{font:13px sans-serif}table{width:100%;border-collapse:collapse}td,th{border:1px solid #444;padding:4px 6px;text-align:left}img{width:46px;height:56px;object-fit:cover}tr{page-break-inside:avoid}</style><h2>FISU Voters Accreditation List (${l.length})</h2><table><tr><th>No</th><th>Photo</th><th>Name</th><th>Voter ID</th><th>Phone</th><th>Category</th><th>Signature</th></tr>${l.map((a,i)=>`<tr><td>${i+1}</td><td><img src="/api/admin/voter-file/${a.id}/passport"></td><td>${esc(a.data.fullName)}</td><td>${a.ref}</td><td>${esc(a.data.phone)}</td><td>${esc(a.data.category)}</td><td style="width:110px"></td></tr>`).join('')}</table>`);
  w.document.close();setTimeout(()=>w.print(),1500+l.length*40)};
+let V;
+const vp=(u,b)=>fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})}).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Failed');return d});
+const vAct=async(u,b,ask)=>{if(ask&&!confirm(ask))return;try{await vp(u,b)}catch(e){alert(e.message)}loadVote()};
+async function loadVote(){const r=await fetch('/api/admin/vote');if(!r.ok)return;V=await r.json();renderVote()}
+function renderVote(){const v=V,n=v.positions.length,st={pending:'Voting has not started',open:'Voting is OPEN',closed:'Voting has ENDED'}[v.state];
+ const shown=v.reveal<0?'Voting-ended message (no results yet)':v.reveal>=n?'Complete winners dashboard':`Position ${v.reveal+1} of ${n}: ${v.positions[v.reveal].position}`;
+ const B=(id,t,x='')=>`<button class="btn sm" id="${id}" ${x}>${t}</button>`;
+ $('vsec').innerHTML=`<h2>${st}</h2><p>Turnout: <b id="tn">${v.voted} of ${v.eligible}</b> verified voters. <a href="/screen" target="_blank">Open big screen ↗</a></p>
+ <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">${v.state=='pending'?B('vs','Start voting'):''}${v.state=='open'?B('ve','End voting','style="background:#a02018"'):''}${v.state=='closed'?B('rp','◀ Previous')+B('rn','Show next position ▶')+B('ra','Show all winners','class="btn sm alt"')+B('rh','Hide results','style="background:#555"')+(v.reveal<0?B('ro','Reopen voting','style="background:#555"'):''):''}</div>
+ ${v.state=='closed'?`<p>Big screen is showing: <b>${esc(shown)}</b></p>`:''}
+ <h3>Candidates${v.state=='pending'?' <small>(applicants marked Qualified; locked when voting starts)</small>':''}</h3>
+ ${v.positions.map(p=>`<p><b>${esc(p.position)}</b>: ${p.names.map(esc).join(', ')}</p>`).join('')||'<p>No applicants are marked Qualified yet.</p>'}
+ ${v.results?'<h3>Results (admin only)</h3>'+v.results.map(r=>`<p><b>${esc(r.position)}</b> · total ${r.total}${r.tie?' · TIE':''}<br>${r.candidates.map(c=>`${esc(c.name)}: <b>${c.votes}</b>${c.winner?' ★':''}`).join(' · ')}</p>`).join(''):''}
+ <h3>Voting devices</h3><p><small>Only paired devices can open <b>/vote</b>. Generate a code, open /vote on the laptop, tablet or phone and enter it.</small></p>
+ <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="dn" placeholder="Device name (e.g. Booth 1)" style="flex:1;min-width:160px;margin:0">${B('dp','Generate pairing code')}</div>
+ <p id="pcode" style="font:700 2rem Fraunces,serif;color:var(--brown);margin:8px 0"></p>
+ <table>${v.devices.map(d=>`<tr><td>${esc(d.name)}</td><td>${d.revoked?'Revoked':d.last_seen?'Last seen '+new Date(d.last_seen).toLocaleTimeString():'Not used yet'}</td><td>${d.revoked?'':`<button class="btn sm" style="background:#a02018" data-rv="${d.id}">Revoke</button>`}</td></tr>`).join('')||'<tr><td>No devices yet.</td></tr>'}</table>
+ <p style="margin-top:18px">${B('rs','Reset election (test runs only)','style="background:#555"')}</p>`;
+ const on=(id,f)=>{const e=$(id);if(e)e.onclick=f},R=a=>()=>vAct('/api/admin/vote/reveal',{action:a});
+ on('vs',()=>vAct('/api/admin/vote/start',0,'Start voting now? The candidate list will be locked.'));
+ on('ve',()=>vAct('/api/admin/vote/end',0,'End voting? Voters will no longer be able to vote.'));
+ on('ro',()=>vAct('/api/admin/vote/reopen',0,'Reopen voting?'));on('rn',R('next'));on('rp',R('prev'));on('ra',R('all'));on('rh',R('hide'));
+ on('dp',async()=>{try{const d=await vp('/api/admin/vote/pair',{name:$('dn').value});$('pcode').textContent=d.code+'  (valid 15 minutes)'}catch(e){alert(e.message)}});
+ document.querySelectorAll('[data-rv]').forEach(b=>b.onclick=()=>vAct('/api/admin/vote/revoke/'+b.dataset.rv,0,'Revoke this device?'));
+ on('rs',()=>{const t=prompt('This deletes ALL votes and resets the election. Type RESET to confirm.');if(t)vAct('/api/admin/vote/reset',{confirm:t})})}
+setInterval(async()=>{if(T!=='vote'||!V||V.state!=='open')return;const r=await fetch('/api/admin/vote');if(r.ok){const d=await r.json();V.voted=d.voted;if($('tn'))$('tn').textContent=d.voted+' of '+d.eligible}},5000);
 load();
 </script></body></html>

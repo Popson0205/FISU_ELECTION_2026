@@ -1,0 +1,46 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>FISU Voting</title><link rel="icon" href="logo.png"><meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Hanken+Grotesk:wght@400;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css">
+<style>
+body{background:var(--deep);min-height:100vh;color:#fff}#app{max-width:900px;margin:0 auto;padding:16px}
+.bar{display:flex;align-items:center;gap:12px;margin-bottom:14px}.bar img{width:54px;background:#fff;border-radius:50%;padding:3px}.bar b{font:700 1.1rem Fraunces,serif}
+.panel{background:#fff;color:var(--ink);border-radius:16px;padding:22px}.panel p{margin:6px 0}
+.big{font:700 1.6rem 'Hanken Grotesk',sans-serif;text-align:center;letter-spacing:.1em;text-transform:uppercase;padding:14px}
+.cands{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin:16px 0}
+.cand{border:3px solid var(--line);border-radius:14px;background:#fff;padding:10px;text-align:center;cursor:pointer;font:inherit;color:var(--ink)}
+.cand img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:10px;background:#eee}.cand b{display:block;margin-top:8px;font:700 1.05rem Fraunces,serif}
+.cand.on{border-color:var(--orange);background:#fff4e5;box-shadow:0 0 0 4px #f5c58a}.cand.on b::after{content:" ✔";color:#1c6b30}
+.nav{display:flex;gap:10px}.nav .btn{flex:1}.prog{height:8px;background:#e6d8c6;border-radius:9px;overflow:hidden}.prog i{display:block;height:100%;background:var(--orange)}
+.btn:disabled{opacity:.4}
+</style></head><body><div id="app"></div><div class="pw dk"><img src="geoestate.png" alt="GeoEstate Spatial Intelligence"><span>Powered by <b>GeoEstate NIG Limited</b></span></div>
+<script>
+const $=id=>document.getElementById(id),app=$('app');
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let dev=localStorage.getItem('fisu_dev'),S=null,ballot=[],ci=0,choice={},idle;
+const api=async(u,o={})=>{const h={'Content-Type':'application/json'};if(dev)h['x-device']=dev;if(S)h['x-session']=S.session;
+ const r=await fetch(u,{method:o.method,headers:h,body:o.body&&JSON.stringify(o.body)});const d=await r.json().catch(()=>({}));
+ if(!r.ok){if(d.code==='DEVICE'){localStorage.removeItem('fisu_dev');dev=null}throw Object.assign(new Error(d.error||'Error'),{code:d.code})}return d};
+const show=h=>{app.innerHTML=`<div class="bar"><img src="logo.png" alt=""><div><b>FISU Election 2026</b><br><small>Knowledge is Power</small></div></div><div class="panel">${h}</div>`;scrollTo(0,0)};
+const arm=()=>{clearTimeout(idle);idle=setTimeout(()=>loginView('Session timed out. Please log in again.'),180000)};
+document.addEventListener('click',()=>S&&arm());
+const fail=e=>e.code==='DEVICE'?pairView(e.message):e.code==='SESSION'?loginView(e.message):alert(e.message);
+function pairView(m=''){S=null;clearTimeout(idle);show(`<h2>Authorise this device</h2><p>Enter the pairing code shown in the admin portal.</p><label>Pairing code<input id="pc" inputmode="numeric" maxlength="6" autocomplete="off"></label><br><button class="btn" id="pb">Authorise device</button><p class="err" id="pe">${esc(m)}</p>`);
+ $('pb').onclick=async()=>{try{const d=await api('/api/vote/pair',{method:'POST',body:{code:$('pc').value}});dev=d.token;localStorage.setItem('fisu_dev',dev);loginView()}catch(e){$('pe').textContent=e.message}}}
+function loginView(m=''){S=null;clearTimeout(idle);choice={};show(`<h2>Voter login</h2><p>Enter your Voter ID (for example FISUV-A1B2C3).</p><input id="rid" class="big" autocomplete="off" autocapitalize="characters" placeholder="FISUV-XXXXXX"><br><br><button class="btn" id="lb">Continue</button><p class="err" id="le">${esc(m)}</p>`);
+ const go=async()=>{$('lb').disabled=true;try{S=await api('/api/vote/login',{method:'POST',body:{ref:$('rid').value}});confirmView()}catch(e){if(e.code==='DEVICE')return pairView(e.message);$('le').textContent=e.message;$('lb').disabled=false}};
+ $('lb').onclick=go;$('rid').onkeydown=e=>e.key==='Enter'&&go();$('rid').focus()}
+function confirmView(){arm();show(`<div style="text-align:center"><h2>Is this you?</h2><img src="/api/vote/photo?s=${encodeURIComponent(S.session)}" alt="" style="width:170px;height:210px;object-fit:cover;border-radius:12px;border:4px solid var(--orange)"><h2>${esc(S.name)}</h2><p>${esc(S.category)}</p></div><br><div class="nav"><button class="btn" style="background:#777" id="no">No, cancel</button><button class="btn" id="yes">Yes, start voting</button></div>`);
+ $('no').onclick=()=>loginView();$('yes').onclick=async()=>{try{ballot=await api('/api/vote/ballot');choice={};ci=0;ballotView()}catch(e){fail(e)}}}
+function ballotView(){arm();const p=ballot[ci],n=ballot.length,sel=choice[p.position],q=encodeURIComponent(S.session);
+ show(`<div class="prog"><i style="width:${ci/n*100}%"></i></div><p>Position ${ci+1} of ${n}</p><h1 style="margin:0">${esc(p.position)}</h1><p>Tap a candidate to select.</p>
+ <div class="cands">${p.candidates.map(c=>`<button class="cand ${sel===c.id?'on':''}" data-id="${c.id}"><img src="/api/vote/cand/${c.id}?s=${q}" alt=""><b>${esc(c.name)}</b></button>`).join('')}<button class="cand ${sel==='abstain'?'on':''}" data-id="abstain" style="min-height:120px"><b>Skip this position</b></button></div>
+ <div class="nav"><button class="btn" style="background:#777" id="bk" ${ci?'':'disabled'}>◀ Back</button><button class="btn" id="nx" ${sel?'':'disabled'}>${ci==n-1?'Review':'Next ▶'}</button></div>`);
+ document.querySelectorAll('.cand').forEach(b=>b.onclick=()=>{choice[p.position]=b.dataset.id==='abstain'?'abstain':+b.dataset.id;document.querySelectorAll('.cand').forEach(x=>x.classList.toggle('on',x===b));$('nx').disabled=false});
+ $('bk').onclick=()=>{ci--;ballotView()};$('nx').onclick=()=>{if(ci==n-1)reviewView();else{ci++;ballotView()}}}
+function reviewView(){arm();const nm=p=>{const v=choice[p.position];return v==='abstain'?'— Skipped —':p.candidates.find(c=>c.id===v).name};
+ show(`<h2>Review your choices</h2><table>${ballot.map((p,i)=>`<tr><td><small>${esc(p.position)}</small><br><b>${esc(nm(p))}</b></td><td style="text-align:right"><button class="btn sm" data-i="${i}">Change</button></td></tr>`).join('')}</table><br><div class="nav"><button class="btn" style="background:#777" id="bk">◀ Back</button><button class="btn" id="sub">Submit my vote</button></div><p class="err" id="se"></p>`);
+ document.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{ci=+b.dataset.i;ballotView()});$('bk').onclick=()=>{ci=ballot.length-1;ballotView()};
+ $('sub').onclick=async()=>{$('sub').disabled=true;try{await api('/api/vote/cast',{method:'POST',body:{choices:choice}});doneView()}catch(e){if(e.code)return fail(e);$('se').textContent=e.message;$('sub').disabled=false}}}
+function doneView(){S=null;clearTimeout(idle);choice={};show(`<div style="text-align:center"><div style="font-size:4rem;color:#1c6b30">✔</div><h2>Thank you!</h2><p>Your vote has been recorded.</p><p><small>This screen will reset for the next voter.</small></p></div>`);setTimeout(()=>loginView(),6000)}
+dev?loginView():pairView();
+</script></body></html>

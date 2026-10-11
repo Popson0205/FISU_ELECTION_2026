@@ -1,0 +1,40 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FISUEC 2026 · Live</title><link rel="icon" href="logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Hanken+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--brown:#7a3e14;--deep:#2b1408;--orange:#e8851e;--gold:#ffc857}*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:#fff;font-family:'Hanken Grotesk',sans-serif;background:radial-gradient(circle at 20% 0,#5b2c10,var(--deep) 70%)}
+header{display:flex;align-items:center;gap:2vw;padding:2vw 4vw;border-bottom:3px solid var(--orange)}header img{width:7vw;min-width:60px;background:#fff;border-radius:50%;padding:.4vw}
+header h1{font:700 2.4vw/1.1 Fraunces,serif;margin:0}header p{margin:.4vw 0 0;color:#f3d9bd;font-size:1.5vw}
+.c{padding:3vw 6vw;text-align:center}.c h2{font:700 3.2vw Fraunces,serif;margin:.5vw 0}.c p,.c small{font-size:1.6vw;color:#f3d9bd}
+.live{display:inline-flex;gap:.8vw;align-items:center;font-weight:700;letter-spacing:.2em;font-size:1.6vw;color:#7dffa0}.live i{width:1.2vw;height:1.2vw;border-radius:50%;background:#2ee66b;animation:p 1.2s infinite}@keyframes p{50%{opacity:.25}}
+.num{font:700 18vw/1 Fraunces,serif;color:var(--gold);margin:1vw 0 0}
+.prog{height:2vw;background:#ffffff22;border-radius:2vw;overflow:hidden;max-width:70vw;margin:2vw auto}.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--orange),var(--gold));transition:width 1s}
+.pos{font-size:4.5vw!important;color:var(--gold);text-transform:uppercase;letter-spacing:.05em}
+.rows{max-width:80vw;margin:2vw auto;display:grid;gap:1.4vw}.row{display:flex;align-items:center;gap:2vw;background:#ffffff12;border-radius:1.5vw;padding:1.2vw 2vw;text-align:left}
+.row img{width:9vw;height:11vw;object-fit:cover;border-radius:1vw;border:.3vw solid #ffffff55;background:#222}.row .nm{flex:1}.row b{font:700 2.6vw Fraunces,serif}
+.track{height:2vw;background:#ffffff22;border-radius:1vw;margin-top:.8vw;overflow:hidden}.track i{display:block;height:100%;background:#c9a27a;transition:width 1.6s cubic-bezier(.2,.8,.2,1)}
+.row .v{text-align:right;min-width:12vw}.row .v b{font-size:4vw;display:block;color:#fff}.row .v small{font-size:1.5vw}
+.row.win{background:linear-gradient(90deg,#ffc85733,#ffffff12);outline:.3vw solid var(--gold)}.row.win .track i{background:var(--gold)}.row.win .v b{color:var(--gold)}
+.tag{display:inline-block;margin-left:1.2vw;background:var(--gold);color:#2b1408;font:700 1.4vw 'Hanken Grotesk';padding:.3vw 1vw;border-radius:.8vw;vertical-align:middle}
+.tie{display:inline-block;background:#a02018;padding:.6vw 2vw;border-radius:1vw;font-weight:700;font-size:1.6vw}
+.wide{padding:2vw 3vw}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(15vw,1fr));gap:1.2vw;margin-top:1.5vw}
+.wc{background:#ffffff14;border:.2vw solid #ffffff33;border-radius:1.2vw;padding:1vw;display:flex;flex-direction:column;align-items:center;gap:.4vw}.wc small{color:var(--gold);font-weight:700;text-transform:uppercase;font-size:1.1vw;letter-spacing:.06em}
+.wc img{width:8vw;height:10vw;object-fit:cover;border-radius:.8vw;border:.25vw solid var(--gold)}.wc b{font:700 1.5vw Fraunces,serif}.wc em{font-style:normal;color:#f3d9bd;font-size:1.1vw}
+.pw{display:flex;align-items:center;justify-content:center;gap:1.2vw;padding:1.5vw 0 2.5vw;color:#f3d9bd;font-size:1.3vw}.pw img{height:6vw;min-height:56px;background:#fff;border-radius:.8vw;padding:.3vw .8vw}.pw b{color:#fff}
+</style></head><body><div id="s"></div><div class="pw"><img src="geoestate.png" alt="GeoEstate Spatial Intelligence"><span>Powered by <b>GeoEstate NIG Limited</b></span></div>
+<script>
+const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hdr=t=>`<header><img src="logo.png" alt=""><div><h1>Federation of Ido-Osun Students' Union</h1><p>FISUEC 2026 · ${t}</p></div></header>`;
+const pc=d=>d.eligible?Math.min(100,Math.round(d.voted*1000/d.eligible)/10):0;
+function draw(d){const s=$('s');
+ if(d.state==='pending')s.innerHTML=hdr('General Election')+`<main class="c"><h2>Voting has not started</h2><p>Please wait for the electoral committee.</p></main>`;
+ else if(d.state==='open')s.innerHTML=hdr('Voting in progress')+`<main class="c"><div class="live"><i></i> LIVE</div><div class="num">${d.voted.toLocaleString()}</div><h2>votes cast</h2><div class="prog"><i style="width:${pc(d)}%"></i></div><p>${pc(d)}% of ${d.eligible.toLocaleString()} verified voters</p><small>Results will be announced after voting ends.</small></main>`;
+ else if(d.state==='closed')s.innerHTML=hdr('Voting has ended')+`<main class="c"><h2>Voting has ended</h2><div class="num">${d.voted.toLocaleString()}</div><h2>votes cast</h2><p>${pc(d)}% turnout · Results will be announced shortly.</p></main>`;
+ else if(d.state==='reveal'){const r=d.result,max=Math.max(1,...r.candidates.map(c=>c.votes));
+  s.innerHTML=hdr(`Results · Position ${d.index+1} of ${d.total}`)+`<main class="c"><h2 class="pos">${esc(r.position)}</h2>${r.tie?'<div class="tie">TIE — to be resolved by the electoral committee</div>':''}<div class="rows">${r.candidates.map(c=>`<div class="row ${c.winner?'win':''}"><img src="/api/screen/photo/${c.id}" alt=""><div class="nm"><b>${esc(c.name)}</b>${c.winner?`<span class="tag">${r.tie?'TIED':'WINNER'}</span>`:''}<div class="track"><i data-w="${c.votes/max*100}" style="width:0"></i></div></div><div class="v"><b>${c.votes}</b><small>${c.pct}%</small></div></div>`).join('')}</div><small>Total votes: ${r.total}${r.abstain?' · Skipped: '+r.abstain:''}</small></main>`;
+  setTimeout(()=>s.querySelectorAll('.track i').forEach(i=>i.style.width=i.dataset.w+'%'),80)}
+ else s.innerHTML=hdr('Final results')+`<main class="c wide"><h2>Elected Executives</h2><div class="grid">${d.results.map(r=>{const w=r.candidates.filter(c=>c.winner);return `<div class="wc"><small>${esc(r.position)}</small>${w.length?w.map(c=>`<img src="/api/screen/photo/${c.id}" alt=""><b>${esc(c.name)}</b>`).join('')+`<em>${w[0].votes} votes${r.tie?' · TIE':''}</em>`:'<b>No votes</b>'}</div>`}).join('')}</div></main>`}
+let last='';async function tick(){try{const d=await(await fetch('/api/screen',{cache:'no-store'})).json(),j=JSON.stringify(d);if(j!==last){last=j;draw(d)}}catch{}setTimeout(tick,3000)}
+tick();
+</script></body></html>
