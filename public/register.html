@@ -4,7 +4,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script></head><body>
 <header class="hero"><a class="back" href="/">← Back</a><br><img src="logo.png" alt="FISU logo"><h1>Voters Registration</h1><p>FISUEC 2026 · Federation of Ido-Osun Students' Union</p></header>
 <main class="wrap">
+<section class="card" id="cl" hidden><h2>Registration is not open</h2><p id="cmsg"></p><p><a class="btn sm" style="text-decoration:none;display:inline-block" href="/">Back to home</a></p></section>
 <section class="card" id="gate"><h2>Who can register</h2>
+<p class="note" id="wn"></p>
 <ol><li>You must be currently in <b>SSS 3</b>, or be an <b>undergraduate</b> or a <b>graduate</b>.</li>
 <li>You must be an <b>indigene</b> of the town, or a <b>non-indigene who has lived in the town for at least 5 years</b>.</li></ol>
 <div class="note"><b>SSS 3 students:</b> your proof of studentship is your promotion report sheet to SSS 3. Bring it with you to the venue on election day.</div>
@@ -45,7 +47,7 @@
 <p><a class="btn sm" style="text-decoration:none;display:inline-block" href="/">Back to home</a></p></section>
 </main><footer>© Federation of Ido-Osun Students' Union · National Headquarter</footer>
 <script>
-fetch('/api/config').then(r=>r.json()).then(c=>pay.innerHTML=`Membership fee: <b>₦200</b><br>Pay to <b>${c.accNo}</b> — ${c.accName} (${c.bank}). Then upload the receipt below.`);
+fetch('/api/config').then(r=>r.json()).then(c=>{const w=c.windows.voters;if(w.state==='open')wn.textContent='Open from '+w.open+' to '+w.close+' (deadline 11:59pm).';else{gate.hidden=true;cl.hidden=false;cmsg.textContent=w.msg};pay.innerHTML=`Membership fee: <b>₦200</b><br>Pay to <b>${c.accNo}</b> — ${c.accName} (${c.bank}). Then upload the receipt below.`});
 agree.onchange=()=>cont.disabled=!agree.checked;
 cont.onclick=()=>{gate.hidden=true;f.hidden=false;scrollTo(0,0)};
 const tg=(box,inp,on)=>{box.hidden=!on;inp.disabled=!on;inp.required=on};

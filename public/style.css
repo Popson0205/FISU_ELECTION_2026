@@ -42,3 +42,4 @@ tr.row{cursor:pointer}tr.row:hover{background:#fff4e5}
 .note{background:#fff4e5;border-left:4px solid var(--orange);padding:10px 12px;border-radius:8px;font-size:.92rem;margin:12px 0}
 .tabs{display:flex;gap:8px;margin-bottom:14px}.tabs button{flex:1;padding:10px;border:1px solid var(--brown);background:#fff;color:var(--brown);border-radius:10px;font:600 1rem 'Hanken Grotesk',sans-serif;cursor:pointer}.tabs .on{background:var(--brown);color:#fff}
 .modal .docs a{color:#fde9c8}
+.choice .winl{margin:0 0 8px;font-weight:700;font-size:.9rem;color:#8a5200}.choice .winl.open{color:#1c6b30}.choice .winl.closed{color:#a02018}

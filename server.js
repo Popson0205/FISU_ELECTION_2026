@@ -21,15 +21,21 @@ app.use(express.json());app.use(express.static('public'));app.get('/apply',(q,s)
 pool.query(`CREATE TABLE IF NOT EXISTS applicants(id SERIAL PRIMARY KEY,ref TEXT UNIQUE,data JSONB NOT NULL,status TEXT DEFAULT 'Pending',created_at TIMESTAMPTZ DEFAULT now());
 CREATE TABLE IF NOT EXISTS files(applicant_id INT REFERENCES applicants(id) ON DELETE CASCADE,kind TEXT,mime TEXT,name TEXT,data BYTEA,PRIMARY KEY(applicant_id,kind));`).catch(e=>console.error('DB init failed',e));
 
+const WIN={apply:{name:'application portal',open:E.APPLY_OPEN||'2026-10-14T00:00:00+01:00',close:E.APPLY_CLOSE||'2026-11-15T23:59:59+01:00'},
+ voters:{name:'voters registration portal',open:E.VOTE_OPEN||'2026-10-19T00:00:00+01:00',close:E.VOTE_CLOSE||'2026-12-13T23:59:59+01:00'}};
+const dd=x=>new Date(x).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'Africa/Lagos'});
+const state=k=>{const n=Date.now(),w=WIN[k];return n<new Date(w.open)?'before':n>new Date(w.close)?'closed':'open'};
+const msg=k=>{const w=WIN[k];return state(k)==='before'?`The ${w.name} opens on ${dd(w.open)}.`:`The ${w.name} closed on ${dd(w.close)} at 11:59pm.`};
+const gate=k=>(q,s,n)=>state(k)==='open'?n():s.status(403).json({error:msg(k)});
 const POS=(E.POSITIONS||'President,Vice President,General Secretary,Assistant General Secretary,Financial Secretary,Treasurer,Public Relation Officer,Director of Sport,Director of Welfare,Director of Social,Librarian,Chief Whip,Auditor').split(',').map(x=>x.trim());
 const PRICES={'President':7000,'Vice President':6000,'General Secretary':5000};
 const priceOf=p=>PRICES[p]||4000;
-app.get('/api/config',(q,s)=>s.json({bank:E.BANK_NAME||'',accName:E.ACCOUNT_NAME||'',accNo:E.ACCOUNT_NUMBER||'',positions:POS,fees:Object.fromEntries(POS.map(p=>[p,priceOf(p)]))}));
+app.get('/api/config',(q,s)=>s.json({bank:E.BANK_NAME||'',accName:E.ACCOUNT_NAME||'',accNo:E.ACCOUNT_NUMBER||'',windows:Object.fromEntries(Object.keys(WIN).map(k=>[k,{state:state(k),open:dd(WIN[k].open),close:dd(WIN[k].close),msg:msg(k)}])),positions:POS,fees:Object.fromEntries(POS.map(p=>[p,priceOf(p)]))}));
 
 pool.query(`CREATE TABLE IF NOT EXISTS voters(id SERIAL PRIMARY KEY,ref TEXT UNIQUE,phone TEXT UNIQUE,data JSONB NOT NULL,status TEXT DEFAULT 'Pending',created_at TIMESTAMPTZ DEFAULT now());
 CREATE TABLE IF NOT EXISTS voter_files(voter_id INT REFERENCES voters(id) ON DELETE CASCADE,kind TEXT,mime TEXT,name TEXT,data BYTEA,PRIMARY KEY(voter_id,kind));`).catch(e=>console.error('DB init failed',e));
 const FILES=[['passport',1],['admission',1],['lgaProof',1],['receipt',1]];
-app.post('/api/apply',up.fields(FILES.map(([name])=>({name,maxCount:1}))),async(q,s)=>{
+app.post('/api/apply',gate('apply'),up.fields(FILES.map(([name])=>({name,maxCount:1}))),async(q,s)=>{
  try{
   const f=q.files||{},b=q.body;
   for(const k of['fullName','gender','dob','phone','email','address','lga','position','ward','faculty','matricNo','institution','qualification','department','level'])
@@ -64,7 +70,7 @@ app.get('/api/admin/file/:id/:kind',auth,async(q,s)=>{
  if(!r.rows[0])return s.sendStatus(404);s.type(r.rows[0].mime).send(r.rows[0].data);
 });
 
-app.post('/api/register',up.fields([{name:'passport',maxCount:1},{name:'lgaProof',maxCount:1},{name:'receipt',maxCount:1},{name:'admission',maxCount:1}]),async(q,s)=>{
+app.post('/api/register',gate('voters'),up.fields([{name:'passport',maxCount:1},{name:'lgaProof',maxCount:1},{name:'receipt',maxCount:1},{name:'admission',maxCount:1}]),async(q,s)=>{
  try{
   const f=q.files||{},b=q.body,T=k=>(b[k]||'').trim(),bad=m=>s.status(400).json({error:m});
   for(const k of['fullName','gender','dob','phone','email','address','lga','ward','residency','category'])if(!T(k))return bad('Please fill in all required fields.');

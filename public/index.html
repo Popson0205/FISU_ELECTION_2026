@@ -3,6 +3,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Hanken+Grotesk:wght@400;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css"></head><body>
 <header class="hero"><img src="logo.png" alt="FISU logo"><h1>Federation of Ido-Osun Students' Union</h1><p>FISUEC 2026 Election Portal · Knowledge is Power</p></header>
 <main class="wrap"><div class="choices">
-<a class="choice" href="/register"><h2>Voters Registration</h2><p>Register to vote in the upcoming FISU election.</p><span class="go">Register now →</span></a>
-<a class="choice" href="/apply"><h2>Applicant</h2><p>Apply for an executive position and get your election form.</p><span class="go">Apply now →</span></a>
-</div></main><footer>© Federation of Ido-Osun Students' Union · National Headquarter</footer></body></html>
+<a class="choice" href="/register"><h2>Voters Registration</h2><p>Register to vote in the upcoming FISU election.</p><p class="winl" id="vw"></p><span class="go">Register now →</span></a>
+<a class="choice" href="/apply"><h2>Applicant</h2><p>Apply for an executive position and get your election form.</p><p class="winl" id="aw"></p><span class="go">Apply now →</span></a>
+</div></main><script>
+fetch('/api/config').then(r=>r.json()).then(c=>{const t=w=>w.state==='open'?'Open · closes '+w.close+', 11:59pm':w.state==='before'?'Opens '+w.open:'Closed on '+w.close;
+ for(const[el,w]of[[vw,c.windows.voters],[aw,c.windows.apply]]){el.textContent=t(w);el.className='winl '+w.state}})
+</script><footer>© Federation of Ido-Osun Students' Union · National Headquarter</footer></body></html>

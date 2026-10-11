@@ -6,7 +6,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script></head><body>
 <header class="hero"><a class="back" href="/">← Back</a><br><img src="logo.png" alt="FISU logo"><h1>Federation of Ido-Osun Students' Union</h1><p>Election Form Application · Knowledge is Power</p></header>
 <main class="wrap">
+<section class="card" id="cl" hidden><h2>Applications are not open</h2><p id="cmsg"></p><p><a class="btn sm" style="text-decoration:none;display:inline-block" href="/">Back to home</a></p></section>
 <section class="card" id="gate"><h2>FISUEC eligibility criteria</h2>
+<p class="note" id="wn"></p>
 <p><small>FISUEC 2026 Publication 002 · 4/10/2026</small></p>
 <h3 style="font-size:1rem">1. General academic qualification</h3><p>A candidate must hold, or be currently pursuing, at least one of: National Diploma (ND, preliminary included), National Certificate of Education (NCE), Higher National Diploma (HND), or B.Sc./B.A./LL.B./B.Tech. or an equivalent.</p>
 <h3 style="font-size:1rem">2. President</h3><p>Must be an HND holder or undergraduate, or a B.Sc./B.A. graduate or undergraduate, or hold an equivalent qualification.</p>
@@ -65,7 +67,7 @@ qual.onchange=()=>opts(lvl,qual.value?(LV[qual.value]||DEG):[],qual.value?'Selec
 opts(qual,[],'Select position first');opts(lvl,[],'Select qualification first');
 let C;const money=n=>'₦'+Number(n).toLocaleString('en-NG');
 const showPay=()=>{if(!C)return;const fee=C.fees[pos.value];pay.innerHTML=(fee?`Form fee for <b>${pos.value}</b>: <b>${money(fee)}</b>`:'Select a position above to see the form fee.')+`<br>Pay to <b>${C.accNo}</b> — ${C.accName} (${C.bank}). Upload the receipt below.`};
-fetch('/api/config').then(r=>r.json()).then(c=>{C=c;
+fetch('/api/config').then(r=>r.json()).then(c=>{C=c;const w=c.windows.apply;if(w.state==='open')wn.textContent='Open from '+w.open+' to '+w.close+' (deadline 11:59pm).';else{gate.hidden=true;cl.hidden=false;cmsg.textContent=w.msg}
  offices.innerHTML=c.positions.map(p=>`<li>${p} — ${money(c.fees[p])}</li>`).join('');pos.innerHTML+=c.positions.map(p=>`<option>${p}</option>`).join('');showPay()});
 f.onsubmit=async e=>{e.preventDefault();err.textContent='';
  if(!f.checkValidity()){f.reportValidity();return}
