@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>FISUEC 2026 Portal</title><link rel="icon" href="logo.png">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Hanken+Grotesk:wght@400;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css"></head><body>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Hanken+Grotesk:wght@400;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css"></head><body class="pg">
 <header class="hero"><img src="logo.png" alt="FISU logo"><h1>Federation of Ido-Osun Students' Union</h1><p>FISUEC 2026 Election Portal · Knowledge is Power</p></header>
 <main class="wrap"><div class="choices">
 <a class="choice" href="/register"><h2>Voters Registration</h2><p>Register to vote in the upcoming FISU election.</p><p class="winl" id="vw"></p><span class="go">Register now →</span></a>
@@ -8,4 +8,4 @@
 </div></main><script>
 fetch('/api/config').then(r=>r.json()).then(c=>{const t=w=>w.state==='open'?'Open · closes '+w.close+', 11:59pm':w.state==='before'?'Opens '+w.open:'Closed on '+w.close;
  for(const[el,w]of[[vw,c.windows.voters],[aw,c.windows.apply]]){el.textContent=t(w);el.className='winl '+w.state}})
-</script><footer>© Federation of Ido-Osun Students' Union · National Headquarter<div class="pw"><img src="geoestate.png" alt="GeoEstate Spatial Intelligence"><span>Powered by <b>GeoEstate NIG Limited</b></span></div></footer></body></html>
+</script><footer class="site-foot"><div class="cp">© Federation of Ido-Osun Students' Union · National Headquarter</div><div class="pw"><span>Powered by</span><img src="geoestate.png" alt="GeoEstate Spatial Intelligence"><b>GeoEstate NIG Limited</b></div></footer></body></html>

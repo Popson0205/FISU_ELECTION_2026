@@ -2,7 +2,7 @@
 <title>FISU Admin</title><link rel="icon" href="logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Hanken+Grotesk:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script></head><body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script></head><body class="pg">
 <header class="hero" style="padding-bottom:50px"><img src="logo.png" alt="" style="width:80px"><h1>Admin portal</h1></header>
 <main class="wrap" style="max-width:960px">
 <section class="card" id="login" style="max-width:380px;margin:0 auto"><h2>Sign in</h2><label>Password<input type="password" id="pw"></label><br><button class="btn" id="in">Sign in</button><p class="err" id="e"></p></section>
@@ -11,7 +11,7 @@
 <div id="lst"><h2><span id="count"></span></h2>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><input id="q" placeholder="Search name, ID, phone…" style="flex:1;min-width:160px;margin:0"><select id="sf" style="width:auto;margin:0"></select>
 <span id="vtools" hidden style="display:flex;gap:8px"><button class="btn sm" id="csv">Download list (CSV)</button><button class="btn sm alt" id="prt">Print list</button></span></div>
-<div style="overflow-x:auto"><table><thead id="th"></thead><tbody id="rows"></tbody></table></div></div><div id="vsec" hidden></div></section></main><div class="pw"><img src="geoestate.png" alt="GeoEstate Spatial Intelligence"><span>Powered by <b>GeoEstate NIG Limited</b></span></div>
+<div style="overflow-x:auto"><table><thead id="th"></thead><tbody id="rows"></tbody></table></div></div><div id="vsec" hidden></div></section></main><footer class="site-foot"><div class="pw"><span>Powered by</span><img src="geoestate.png" alt="GeoEstate Spatial Intelligence"><b>GeoEstate NIG Limited</b></div></footer>
 <div class="modal" id="m"><div class="tools"><button class="btn sm" id="dl">Download image</button><button class="btn sm alt" id="sh">Share image</button>
 <button class="btn sm" style="background:#555" id="x">Close</button></div>
 <div class="profile" id="card"></div><p class="docs" id="docs" style="text-align:center;margin-top:12px"></p>

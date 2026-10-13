@@ -3,7 +3,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Hanken+Grotesk:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script></head><body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script></head><body class="pg">
 <header class="hero"><a class="back" href="/">← Back</a><br><img src="logo.png" alt="FISU logo"><h1>Federation of Ido-Osun Students' Union</h1><p>Election Form Application · Knowledge is Power</p></header>
 <main class="wrap">
 <section class="card" id="cl" hidden><h2>Applications are not open</h2><p id="cmsg"></p><p><a class="btn sm" style="text-decoration:none;display:inline-block" href="/">Back to home</a></p></section>
@@ -52,7 +52,7 @@
 </form>
 <section class="card done" id="ok" hidden><h2 style="border:0;padding:0">Application received</h2><p>Keep your reference number. The electoral committee will review your payment and documents.</p><div class="ref" id="ref"></div><p><button class="btn" id="pdf">Download application form (PDF)</button></p>
 <p><button class="btn sm" onclick="location.reload()">Submit another</button></p></section>
-</main><footer>© Federation of Ido-Osun Students' Union · National Headquarter<div class="pw"><img src="geoestate.png" alt="GeoEstate Spatial Intelligence"><span>Powered by <b>GeoEstate NIG Limited</b></span></div></footer>
+</main><footer class="site-foot"><div class="cp">© Federation of Ido-Osun Students' Union · National Headquarter</div><div class="pw"><span>Powered by</span><img src="geoestate.png" alt="GeoEstate Spatial Intelligence"><b>GeoEstate NIG Limited</b></div></footer>
 <script>
 agree.onchange=()=>cont.disabled=!agree.checked;
 cont.onclick=()=>{gate.hidden=true;f.hidden=false;scrollTo(0,0)};
