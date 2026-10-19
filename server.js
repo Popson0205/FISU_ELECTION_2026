@@ -1,7 +1,7 @@
 const express=require('express'),multer=require('multer'),crypto=require('crypto'),{Pool}=require('pg');
 const app=express(),E=process.env;
 const pool=new Pool({connectionString:E.DATABASE_URL,ssl:{rejectUnauthorized:false}});
-const up=multer({storage:multer.memoryStorage(),limits:{fileSize:3*1024*1024}});
+const up=multer({storage:multer.memoryStorage(),limits:{fileSize:10*1024*1024}});
 const PASS=E.ADMIN_PASSWORD||'change-me';
 const TOKEN=crypto.createHmac('sha256',E.SECRET||PASS).update('fisu-admin').digest('hex');
 const auth=(q,s,n)=>(q.headers.cookie||'').includes('fisu='+TOKEN)?n():s.status(401).json({error:'Unauthorized'});
@@ -16,7 +16,7 @@ async function sendMail(to,name,subject,text){
   return{sent:true};
  }catch(e){console.error(e);return{sent:false,error:e.message}}
 }
-app.use(express.json());app.use(express.static('public'));app.get('/apply',(q,s)=>s.sendFile(__dirname+'/public/apply.html'));app.get('/register',(q,s)=>s.sendFile(__dirname+'/public/register.html'));app.get('/admin',(q,s)=>s.sendFile(__dirname+'/public/admin.html'));
+app.use(express.json());app.use('/api',(q,s,n)=>{s.set('Cache-Control','no-store');n()});app.use(express.static('public'));app.get('/apply',(q,s)=>s.sendFile(__dirname+'/public/apply.html'));app.get('/register',(q,s)=>s.sendFile(__dirname+'/public/register.html'));app.get('/admin',(q,s)=>s.sendFile(__dirname+'/public/admin.html'));
 
 pool.query(`CREATE TABLE IF NOT EXISTS applicants(id SERIAL PRIMARY KEY,ref TEXT UNIQUE,data JSONB NOT NULL,status TEXT DEFAULT 'Pending',created_at TIMESTAMPTZ DEFAULT now());
 CREATE TABLE IF NOT EXISTS files(applicant_id INT REFERENCES applicants(id) ON DELETE CASCADE,kind TEXT,mime TEXT,name TEXT,data BYTEA,PRIMARY KEY(applicant_id,kind));`).catch(e=>console.error('DB init failed',e));
@@ -43,6 +43,7 @@ app.post('/api/apply',gate('apply'),up.fields(FILES.map(([name])=>({name,maxCoun
   if(!/^\S+@\S+\.\S+$/.test((b.email||'').trim()))return s.status(400).json({error:'Please enter a valid email address.'});
   if(b.position==='President'&&!['HND','B.Sc.','B.A.','LL.B.','B.Tech.','Equivalent qualification'].includes(b.qualification))return s.status(400).json({error:'The President must hold or be pursuing an HND, B.Sc./B.A. or equivalent.'});
   for(const[k,req]of FILES)if(req&&!f[k])return s.status(400).json({error:'Please upload: '+k.replace(/([A-Z])/g,' $1')+'.'});
+  if(f.passport&&!/^image\//.test(f.passport[0].mimetype))return s.status(400).json({error:'The passport photograph must be an image (JPG or PNG).'});
   for(const k in f)if(!/^(image\/(jpe?g|png|webp)|application\/pdf)$/.test(f[k][0].mimetype))return s.status(400).json({error:'Only JPG, PNG or PDF files are allowed.'});
   const data={};['fullName','gender','dob','phone','email','address','lga','ward','position','institution','faculty','department','level','qualification','matricNo'].forEach(k=>data[k]=(b[k]||'').trim());
   data.fee=priceOf(b.position);
@@ -88,6 +89,7 @@ app.post('/api/register',gate('voters'),up.fields([{name:'passport',maxCount:1},
   if(!f.passport)return bad('Please upload your passport photograph.');
   if(!f.lgaProof)return bad('Please upload your proof of LGA of origin.');
   if(!f.receipt)return bad('Please upload your membership payment receipt.');
+  if(!/^image\//.test(f.passport[0].mimetype))return bad('The passport photograph must be an image (JPG or PNG).');
   for(const k in f)if(!/^(image\/(jpe?g|png|webp)|application\/pdf)$/.test(f[k][0].mimetype))return bad('Only JPG, PNG or PDF files are allowed.');
   const data={};['fullName','gender','dob','email','address','lga','ward','residency','years','category','school','institution','course'].forEach(k=>data[k]=T(k));data.phone=phone;if(nonInd){data.refName=T('refName');data.refPhone=refPhone}
   const ref='FISUV-'+crypto.randomBytes(3).toString('hex').toUpperCase();
@@ -151,7 +153,7 @@ async function tally(){
   p.candidates.forEach(c=>{c.winner=m>0&&c.votes===m;c.pct=p.total?Math.round(c.votes*1000/p.total)/10:0});return p});
 }
 const candPhoto=async(q,s)=>{const r=await pool.query("SELECT f.mime,f.data FROM files f JOIN candidates c ON c.applicant_id=f.applicant_id WHERE f.applicant_id=$1 AND f.kind='passport'",[+q.params.id]);
- if(!r.rows[0])return s.sendStatus(404);s.set('Cache-Control','private, max-age=600').type(r.rows[0].mime).send(r.rows[0].data)};
+ if(!r.rows[0])return s.sendStatus(404);s.type(r.rows[0].mime).send(r.rows[0].data)};
 
 // ---- device pairing (only paired devices can open the voting booth)
 const codes=new Map(),bad=new Map();
@@ -226,5 +228,5 @@ app.post('/api/admin/vote/revoke/:id',auth,W(async(q,s)=>{await pool.query('UPDA
 app.post('/api/admin/vote/reset',auth,W(async(q,s)=>{if(q.body.confirm!=='RESET')return s.status(400).json({error:'Type RESET to confirm.'});
  await pool.query('TRUNCATE ballots,voted,candidates');await setS('vstate','pending');await setS('reveal',-1);s.json({ok:1})}));
 
-app.use((e,q,s,n)=>s.status(400).json({error:e.code==='LIMIT_FILE_SIZE'?'Each file must be 3MB or less.':'Upload failed.'}));
+app.use((e,q,s,n)=>s.status(400).json({error:e.code==='LIMIT_FILE_SIZE'?'Each file must be 10MB or less.':'Upload failed.'}));
 app.listen(E.PORT||3000,()=>console.log('FISU forms running'));
