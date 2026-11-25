@@ -2,7 +2,9 @@
 <title>FISU Admin</title><link rel="icon" href="logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Hanken+Grotesk:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script></head><body class="pg">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script></head><body class="pg">
 <header class="hero" style="padding-bottom:50px"><img src="logo.png" alt="" style="width:80px"><h1>Admin portal</h1></header>
 <main class="wrap" style="max-width:960px">
 <section class="card" id="login" style="max-width:380px;margin:0 auto"><h2>Sign in</h2><label>Password<input type="password" id="pw"></label><br><button class="btn" id="in">Sign in</button><p class="err" id="e"></p></section>
@@ -10,6 +12,7 @@
 <div class="tabs"><button id="tA" class="on">Applicants</button><button id="tV">Voters</button><button id="tE">Voting</button></div>
 <div id="lst"><h2><span id="count"></span></h2>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><input id="q" placeholder="Search name, ID, phone…" style="flex:1;min-width:160px;margin:0"><select id="sf" style="width:auto;margin:0"></select>
+<span id="atools" hidden style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" id="acsv">Download list (CSV)</button><button class="btn sm alt" id="apdf">Download PDF</button><button class="btn sm" id="ajpg" style="background:#555">Download JPEGs (ZIP)</button></span>
 <span id="vtools" hidden style="display:flex;gap:8px"><button class="btn sm" id="csv">Download list (CSV)</button><button class="btn sm alt" id="prt">Print list</button></span></div>
 <div style="overflow-x:auto"><table><thead id="th"></thead><tbody id="rows"></tbody></table></div></div><div id="vsec" hidden></div></section></main><footer class="site-foot"><div class="pw"><span>Powered by</span><img src="geoestate.png" alt="GeoEstate Spatial Intelligence"><b>GeoEstate NIG Limited</b></div></footer>
 <div class="modal" id="m"><div class="tools"><button class="btn sm" id="dl">Download image</button><button class="btn sm alt" id="sh">Share image</button>
@@ -25,7 +28,7 @@ let all=[],cur,T='app';const $=id=>document.getElementById(id);
 const esc=s=>String(s||'—').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const K={app:{list:'/api/admin/list',file:'/api/admin/file/',st:'/api/admin/status/',ok:'Qualified',sts:['Pending','Qualified','Disqualified'],h:['Ref','Name','Position','Status','Date'],c:a=>[a.ref,a.data.fullName,a.data.position]},
  vot:{list:'/api/admin/voters',file:'/api/admin/voter-file/',st:'/api/admin/voter-status/',ok:'Verified',sts:['Pending','Verified','Disqualified'],h:['Voter ID','Name','Category','Status','Date'],c:a=>[a.ref,a.data.fullName,a.data.category]}};
-async function load(){const r=await fetch(K[T].list);if(!r.ok)return;all=await r.json();$('login').hidden=true;$('app').hidden=false;$('vtools').hidden=T!=='vot';
+async function load(){const r=await fetch(K[T].list);if(!r.ok)return;all=await r.json();$('login').hidden=true;$('app').hidden=false;$('vtools').hidden=T!=='vot';$('atools').hidden=T!=='app';
  $('sf').innerHTML='<option value="">All statuses</option>'+K[T].sts.map(x=>`<option>${x}</option>`).join('');
  $('th').innerHTML='<tr>'+K[T].h.map(h=>`<th>${h}</th>`).join('')+'</tr>';draw()}
 const list=()=>{const t=$('q').value.toLowerCase(),f=$('sf').value;return all.filter(a=>(!f||a.status===f)&&(a.ref+JSON.stringify(a.data)).toLowerCase().includes(t))};
@@ -38,10 +41,12 @@ const tab=t=>{T=t;const m={A:'app',V:'vot',E:'vote'};for(const x in m)$('t'+x).c
 $('tA').onclick=()=>tab('app');$('tV').onclick=()=>tab('vot');
 $('in').onclick=async()=>{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('pw').value})});r.ok?load():$('e').textContent='Wrong password.'};
 const badge=()=>{$('qb').hidden=cur.status!==K[T].ok;$('qb').textContent='✔ '+K[T].ok};
-function view(id){cur=all.find(a=>a.id==id);const d=cur.data,k=K[T],app=T=='app',F=k.file+id+'/',row=(a,v)=>v?`<dt>${a}</dt><dd>${esc(v)}</dd>`:'';
- $('card').innerHTML=`<div class="top"><img src="logo.png"><div><b>${app?'FISU Election Form Applicant':'FISU Registered Voter'}</b><span>${app?'Ref':'Voter ID'}: ${cur.ref}</span></div></div><div class="qbadge" id="qb" hidden></div>
+function cardHtml(c,t){const d=c.data,k=K[t],app=t=='app',F=k.file+c.id+'/',row=(a,v)=>v?`<dt>${a}</dt><dd>${esc(v)}</dd>`:'';
+ return `<div class="top"><img src="logo.png"><div><b>${app?'FISU Election Form Applicant':'FISU Registered Voter'}</b><span>${app?'Ref':'Voter ID'}: ${c.ref}</span></div></div><div class="qbadge" id="qb" ${c.status===k.ok?'':'hidden'}>✔ ${k.ok}</div>
  <div class="id"><img class="ph" src="${F}passport"><div><h3>${esc(d.fullName)}</h3><div class="pos">${app?'Position applying for:':'Category:'}<b>${esc(app?d.position:d.category)}</b></div></div></div>
- <dl>${row('Gender',d.gender)}${row('Date of birth',d.dob)}${row('Phone',d.phone)}${row('Email',d.email)}${row('LGA',d.lga+(d.ward?' / '+d.ward:''))}${row('Address',d.address)}${app?row('Institution',d.institution)+row('Department',d.department+(d.faculty?' ('+d.faculty+')':''))+row('Qualification',d.qualification)+row('Level',d.level)+row('Matric no.',d.matricNo)+row('Form fee',d.fee&&'₦'+Number(d.fee).toLocaleString('en-NG')):row('Residency',d.residency+(d.years?` (${d.years} yrs in town)`:''))+row('Referee',d.refName&&d.refName+' ('+d.refPhone+')')+row(d.school?'School':'Institution',d.school||d.institution)+row('Course',d.course)}</dl><div class="ft">Knowledge is Power · FISU-NHQ</div>`;
+ <dl>${row('Gender',d.gender)}${row('Date of birth',d.dob)}${row('Phone',d.phone)}${row('Email',d.email)}${row('LGA',d.lga+(d.ward?' / '+d.ward:''))}${row('Address',d.address)}${app?row('Institution',d.institution)+row('Department',d.department+(d.faculty?' ('+d.faculty+')':''))+row('Qualification',d.qualification)+row('Level',d.level)+row('Matric no.',d.matricNo)+row('Form fee',d.fee&&'₦'+Number(d.fee).toLocaleString('en-NG')):row('Residency',d.residency+(d.years?` (${d.years} yrs in town)`:''))+row('Referee',d.refName&&d.refName+' ('+d.refPhone+')')+row(d.school?'School':'Institution',d.school||d.institution)+row('Course',d.course)}</dl><div class="ft">Knowledge is Power · FISU-NHQ</div>`}
+function view(id){cur=all.find(a=>a.id==id);const d=cur.data,k=K[T],app=T=='app',F=k.file+id+'/';
+ $('card').innerHTML=cardHtml(cur,T);
  $('docs').innerHTML=(app?['admission','lgaProof','receipt']:['lgaProof','receipt',...(d.category!=='SSS 3 student'?['admission']:[])]).map(x=>`<a target="_blank" href="${F}${x}">${{admission:'Admission',lgaProof:'LGA proof',receipt:'Receipt'}[x]}</a>`).join('');
  $('st').innerHTML=k.sts.map(x=>`<option>${x}</option>`).join('');$('st').value=cur.status;badge();$('mail').hidden=true;$('sn').hidden=true;$('sv').textContent='Save';$('dmsg').textContent='';$('m').classList.add('on')}
 $('x').onclick=()=>$('m').classList.remove('on');
@@ -98,5 +103,32 @@ function renderVote(){const v=V,n=v.positions.length,st={pending:'Voting has not
  document.querySelectorAll('[data-rv]').forEach(b=>b.onclick=()=>vAct('/api/admin/vote/revoke/'+b.dataset.rv,0,'Revoke this device?'));
  on('rs',()=>{const t=prompt('This deletes ALL votes and resets the election. Type RESET to confirm.');if(t)vAct('/api/admin/vote/reset',{confirm:t})})}
 setInterval(async()=>{if(T!=='vote'||!V||V.state!=='open')return;const r=await fetch('/api/admin/vote');if(r.ok){const d=await r.json();V.voted=d.voted;if($('tn'))$('tn').textContent=d.voted+' of '+d.eligible}},5000);
+let ORD=[];fetch('/api/config').then(r=>r.json()).then(c=>ORD=c.positions||[]).catch(()=>{});
+const oi=p=>{const i=ORD.indexOf(p);return i<0?99:i},csvq=v=>'"'+String(v??'').replace(/"/g,'""')+'"',fmt=n=>n?'₦'+Number(n).toLocaleString('en-NG'):'';
+const sortedApp=()=>list().sort((a,b)=>oi(a.data.position)-oi(b.data.position)||a.data.fullName.localeCompare(b.data.fullName));
+const saveBlob=(blob,name)=>{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click()};
+const snapHtml=async(html,scale)=>{const el=document.createElement('div');el.style.cssText='position:fixed;left:-10000px;top:0';el.innerHTML=html;document.body.appendChild(el);
+ await Promise.all([...el.querySelectorAll('img')].map(i=>i.complete?1:new Promise(r=>i.onload=i.onerror=r)));
+ try{return await html2canvas(el.firstElementChild,{scale,backgroundColor:'#ffffff',useCORS:true})}finally{el.remove()}};
+const busy=async(b,fn)=>{const t=b.textContent;b.disabled=true;try{await fn(x=>b.textContent=x)}catch(e){alert('Could not create the file: '+e.message)}b.disabled=false;b.textContent=t};
+$('acsv').onclick=()=>{const l=sortedApp();if(!l.length)return alert('No applicants to export.');
+ const H=['No','Reference','Full name','Gender','Date of birth','Phone','Email','Address','LGA of origin','Ward','Position','Form fee (NGN)','Institution','Faculty','Department','Qualification','Level','Matric no.','Status','Applied'];
+ const R=l.map((a,i)=>{const d=a.data;return[i+1,a.ref,d.fullName,d.gender,d.dob,'="'+d.phone+'"',d.email,d.address,d.lga,d.ward,d.position,d.fee,d.institution,d.faculty,d.department,d.qualification,d.level,d.matricNo,a.status,new Date(a.created_at).toLocaleDateString()]});
+ saveBlob(new Blob(['\ufeff'+[H,...R].map(r=>r.map(csvq).join(',')).join('\r\n')],{type:'text/csv'}),'FISU-applicants.csv')};
+const PGW=1123,PGH=794,PER=7;
+const pageHtml=(rows,p,np,start,total,note)=>`<div style="width:${PGW}px;height:${PGH}px;box-sizing:border-box;padding:20px 26px;background:#fff;font-family:'Hanken Grotesk',Arial,sans-serif;color:#2a1a10;position:relative">
+<div style="display:flex;align-items:center;gap:14px;border-bottom:3px solid #e8851e;padding-bottom:8px"><img src="logo.png" style="width:52px;height:52px;object-fit:contain"><div style="flex:1"><div style="font:700 19px Georgia,serif;color:#4a2410">FISU Election 2026 — Applicants</div><div style="font-size:12px;color:#7a3e14">${esc(note)} · ${total} applicant${total==1?'':'s'} · ${new Date().toLocaleDateString('en-GB')}</div></div><div style="font-size:12px">Page ${p+1} of ${np}</div></div>
+<table style="width:100%;border-collapse:collapse;font-size:11.5px;margin-top:6px;word-break:break-word"><tr style="background:#4a2410;color:#fff;text-align:left"><th style="padding:5px">No</th><th>Photo</th><th>Applicant</th><th>Position</th><th>Contact</th><th>LGA</th><th>Education</th><th>Fee</th><th>Status</th></tr>
+${rows.map((a,i)=>{const d=a.data;return `<tr style="border-bottom:1px solid #eadfce;height:78px"><td style="padding:4px">${start+i+1}</td><td><img src="/api/admin/file/${a.id}/passport" style="width:46px;height:58px;object-fit:cover;border:2px solid #e8851e"></td><td><b>${esc(d.fullName)}</b><br>${a.ref}<br>${esc(d.gender)} · ${esc(d.dob)}</td><td><b>${esc(d.position)}</b></td><td>${esc(d.phone)}<br>${esc(d.email)}</td><td>${esc(d.lga)}${d.ward?'<br>'+esc(d.ward):''}</td><td>${esc(d.institution)}<br>${esc(d.department)}<br>${esc(d.qualification)} · ${esc(d.level)}</td><td>${esc(fmt(d.fee))}</td><td><b>${a.status}</b></td></tr>`}).join('')}</table>
+<div style="position:absolute;left:26px;right:26px;bottom:10px;font-size:10.5px;color:#8a7662;display:flex;justify-content:space-between"><span>Federation of Ido-Osun Students' Union · FISUEC 2026</span><span>Powered by GeoEstate NIG Limited</span></div></div>`;
+$('apdf').onclick=()=>busy($('apdf'),async set=>{const l=sortedApp();if(!l.length)throw new Error('No applicants to export.');
+ const{jsPDF}=window.jspdf,pdf=new jsPDF('l','mm','a4'),np=Math.ceil(l.length/PER),note=[$('sf').value||'All statuses',$('q').value&&'search: '+$('q').value].filter(Boolean).join(', ');
+ for(let p=0;p<np;p++){set(`Preparing ${p+1}/${np}…`);const c=await snapHtml(pageHtml(l.slice(p*PER,(p+1)*PER),p,np,p*PER,l.length,note),1.5);if(p)pdf.addPage();pdf.addImage(c.toDataURL('image/jpeg',.9),'JPEG',0,0,297,210)}
+ pdf.save('FISU-applicants.pdf')});
+$('ajpg').onclick=()=>busy($('ajpg'),async set=>{const l=sortedApp();if(!l.length)throw new Error('No applicants to export.');const Z=new JSZip();
+ for(let i=0;i<l.length;i++){set(`Preparing ${i+1}/${l.length}…`);const a=l[i];
+  const c=await snapHtml(`<div class="profile">${cardHtml(a,'app').replace(' id="qb"','')}</div>`,2);
+  Z.file(`${String(i+1).padStart(2,'0')}-${a.ref}-${a.data.fullName.replace(/[^\w]+/g,'_')}.jpg`,await new Promise(r=>c.toBlob(r,'image/jpeg',.92)))}
+ set('Zipping…');saveBlob(await Z.generateAsync({type:'blob'}),'FISU-applicant-profiles.zip')});
 load();
 </script></body></html>
